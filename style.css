@@ -1,0 +1,931 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(0,255,255,.08),
+      transparent 45%
+    );
+
+  color: #eaffff;
+
+  font-family:
+    Inter,
+    Segoe UI,
+    Arial,
+    sans-serif;
+
+}
+
+
+/* ==================================================
+   APP
+================================================== */
+
+#nyuk-football-app {
+
+  width: 100%;
+
+  max-width: 1500px;
+
+  margin: 0 auto;
+
+  padding: 18px;
+
+}
+
+
+/* ==================================================
+   GLASS
+================================================== */
+
+.nf-glass {
+
+  background:
+    rgba(5, 18, 20, .42);
+
+  border:
+    1px solid
+    rgba(0,255,255,.28);
+
+  backdrop-filter:
+    blur(18px);
+
+  -webkit-backdrop-filter:
+    blur(18px);
+
+  box-shadow:
+    0 0 30px
+    rgba(0,255,255,.08),
+
+    inset 0 1px 0
+    rgba(255,255,255,.06);
+
+}
+
+
+/* ==================================================
+   HEADER
+================================================== */
+
+.nf-header {
+
+  position: relative;
+
+  overflow: hidden;
+
+  padding: 25px;
+
+  border-radius: 24px;
+
+  margin-bottom: 16px;
+
+}
+
+
+.nf-header::before {
+
+  content: "";
+
+  position: absolute;
+
+  width: 260px;
+
+  height: 260px;
+
+  right: -100px;
+
+  top: -150px;
+
+  background:
+    rgba(0,255,255,.15);
+
+  filter:
+    blur(50px);
+
+  border-radius: 50%;
+
+}
+
+
+.nf-brand {
+
+  position: relative;
+
+  z-index: 2;
+
+}
+
+
+.nf-title {
+
+  margin: 0;
+
+  font-size: clamp(
+    25px,
+    4vw,
+    42px
+  );
+
+  font-weight: 900;
+
+  letter-spacing: .5px;
+
+  color: #eaffff;
+
+  text-shadow:
+    0 0 12px
+    rgba(0,255,255,.55);
+
+}
+
+
+.nf-subtitle {
+
+  margin-top: 7px;
+
+  color:
+    rgba(180,255,255,.7);
+
+  font-size: 13px;
+
+}
+
+
+/* ==================================================
+   STATUS
+================================================== */
+
+.nf-status {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  margin-top: 16px;
+
+  padding: 7px 12px;
+
+  border-radius: 999px;
+
+  background:
+    rgba(0,255,200,.07);
+
+  border:
+    1px solid
+    rgba(0,255,200,.25);
+
+  font-size: 11px;
+
+  color: #9ffff5;
+
+}
+
+
+.nf-status-dot {
+
+  width: 7px;
+
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #00ffd5;
+
+  box-shadow:
+    0 0 10px #00ffd5;
+
+}
+
+
+/* ==================================================
+   FILTER
+================================================== */
+
+.nf-filter {
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(150px, 1fr)
+    minmax(150px, 1fr)
+    minmax(200px, 1.5fr)
+    auto;
+
+  gap: 10px;
+
+  padding: 14px;
+
+  border-radius: 20px;
+
+  margin-bottom: 16px;
+
+}
+
+
+.nf-input,
+.nf-select,
+.nf-button {
+
+  min-height: 46px;
+
+  border-radius: 12px;
+
+  border:
+    1px solid
+    rgba(0,255,255,.22);
+
+  background:
+    rgba(0,0,0,.35);
+
+  color: #eaffff;
+
+  padding:
+    0 13px;
+
+  outline: none;
+
+  font-size: 13px;
+
+}
+
+
+.nf-input:focus,
+.nf-select:focus {
+
+  border-color:
+    rgba(0,255,255,.7);
+
+  box-shadow:
+    0 0 18px
+    rgba(0,255,255,.12);
+
+}
+
+
+.nf-select option {
+
+  background: #071113;
+
+  color: white;
+
+}
+
+
+.nf-button {
+
+  cursor: pointer;
+
+  padding:
+    0 18px;
+
+  font-weight: 800;
+
+  color: #001516;
+
+  background:
+    linear-gradient(
+      135deg,
+      #00fff0,
+      #00cfd5
+    );
+
+  border: none;
+
+  box-shadow:
+    0 0 18px
+    rgba(0,255,255,.22);
+
+  transition:
+    .2s ease;
+
+}
+
+
+.nf-button:hover {
+
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+    0 0 25px
+    rgba(0,255,255,.4);
+
+}
+
+
+/* ==================================================
+   SUMMARY
+================================================== */
+
+.nf-summary {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 12px;
+
+}
+
+
+.nf-count {
+
+  font-size: 13px;
+
+  color:
+    rgba(210,255,255,.72);
+
+}
+
+
+.nf-date-title {
+
+  font-weight: 900;
+
+  color: #7ffff8;
+
+}
+
+
+/* ==================================================
+   MATCH GRID
+================================================== */
+
+.nf-grid {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fill,
+      minmax(300px, 1fr)
+    );
+
+  gap: 13px;
+
+}
+
+
+/* ==================================================
+   MATCH CARD
+================================================== */
+
+.nf-match {
+
+  position: relative;
+
+  overflow: hidden;
+
+  border-radius: 20px;
+
+  padding: 15px;
+
+  transition:
+    transform .2s ease,
+    border-color .2s ease;
+
+}
+
+
+.nf-match:hover {
+
+  transform:
+    translateY(-2px);
+
+  border-color:
+    rgba(0,255,255,.55);
+
+}
+
+
+.nf-match::after {
+
+  content: "";
+
+  position: absolute;
+
+  left: -50%;
+
+  top: 0;
+
+  width: 50%;
+
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      #00ffff,
+      transparent
+    );
+
+  animation:
+    nfScan 4s linear infinite;
+
+}
+
+
+@keyframes nfScan {
+
+  0% {
+    left: -50%;
+  }
+
+  100% {
+    left: 120%;
+  }
+
+}
+
+
+/* ==================================================
+   LEAGUE
+================================================== */
+
+.nf-league {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 9px;
+
+  min-width: 0;
+
+  margin-bottom: 12px;
+
+}
+
+
+.nf-league img {
+
+  width: 27px;
+
+  height: 27px;
+
+  object-fit: contain;
+
+}
+
+
+.nf-league-name {
+
+  min-width: 0;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  color:
+    rgba(220,255,255,.75);
+
+}
+
+
+.nf-country {
+
+  font-size: 10px;
+
+  color:
+    rgba(160,255,255,.5);
+
+}
+
+
+/* ==================================================
+   TIME
+================================================== */
+
+.nf-time {
+
+  text-align: center;
+
+  margin:
+    5px 0 14px;
+
+}
+
+
+.nf-hour {
+
+  font-size: 22px;
+
+  font-weight: 900;
+
+  color: #eaffff;
+
+  text-shadow:
+    0 0 12px
+    rgba(0,255,255,.35);
+
+}
+
+
+.nf-status-text {
+
+  margin-top: 3px;
+
+  font-size: 10px;
+
+  color: #72fff4;
+
+}
+
+
+/* ==================================================
+   TEAMS
+================================================== */
+
+.nf-teams {
+
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    42px
+    1fr;
+
+  align-items: center;
+
+  gap: 8px;
+
+}
+
+
+.nf-team {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+}
+
+
+.nf-team-away {
+
+  flex-direction: row-reverse;
+
+  text-align: right;
+
+}
+
+
+.nf-team img {
+
+  width: 42px;
+
+  height: 42px;
+
+  object-fit: contain;
+
+}
+
+
+.nf-team-name {
+
+  font-size: 13px;
+
+  font-weight: 800;
+
+  line-height: 1.25;
+
+}
+
+
+.nf-vs {
+
+  text-align: center;
+
+  color:
+    rgba(150,255,255,.4);
+
+  font-size: 10px;
+
+  font-weight: 900;
+
+}
+
+
+/* ==================================================
+   PREDICTION
+================================================== */
+
+.nf-prediction {
+
+  margin-top: 14px;
+
+  padding-top: 13px;
+
+  border-top:
+    1px solid
+    rgba(0,255,255,.1);
+
+}
+
+
+.nf-prediction-title {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  font-size: 10px;
+
+  color:
+    rgba(190,255,255,.55);
+
+  margin-bottom: 8px;
+
+}
+
+
+.nf-prediction-main {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  gap: 10px;
+
+}
+
+
+.nf-prediction-value {
+
+  font-size: 15px;
+
+  font-weight: 900;
+
+  color: #75fff5;
+
+}
+
+
+.nf-prediction-confidence {
+
+  font-size: 10px;
+
+  color:
+    rgba(190,255,255,.5);
+
+}
+
+
+/* ==================================================
+   LOADING
+================================================== */
+
+.nf-loading-screen {
+
+  min-height: 400px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  align-items: center;
+
+  text-align: center;
+
+}
+
+
+.nf-loader {
+
+  width: 48px;
+
+  height: 48px;
+
+  border:
+    3px solid
+    rgba(0,255,255,.12);
+
+  border-top-color:
+    #00ffff;
+
+  border-radius: 50%;
+
+  animation:
+    nfSpin .8s linear infinite;
+
+  box-shadow:
+    0 0 25px
+    rgba(0,255,255,.2);
+
+}
+
+
+@keyframes nfSpin {
+
+  to {
+    transform:
+      rotate(360deg);
+  }
+
+}
+
+
+.nf-loading-title {
+
+  margin-top: 18px;
+
+  font-weight: 900;
+
+  font-size: 14px;
+
+}
+
+
+.nf-loading-text {
+
+  margin-top: 6px;
+
+  font-size: 11px;
+
+  color:
+    rgba(200,255,255,.5);
+
+}
+
+
+/* ==================================================
+   EMPTY / ERROR
+================================================== */
+
+.nf-message {
+
+  padding: 50px 20px;
+
+  text-align: center;
+
+  border-radius: 20px;
+
+}
+
+
+.nf-message-title {
+
+  font-size: 18px;
+
+  font-weight: 900;
+
+}
+
+
+.nf-message-text {
+
+  margin-top: 8px;
+
+  font-size: 12px;
+
+  color:
+    rgba(220,255,255,.55);
+
+}
+
+
+/* ==================================================
+   RESPONSIVE
+================================================== */
+
+@media (
+  max-width: 760px
+) {
+
+  #nyuk-football-app {
+
+    padding: 10px;
+
+  }
+
+
+  .nf-header {
+
+    padding: 19px;
+
+    border-radius: 18px;
+
+  }
+
+
+  .nf-filter {
+
+    grid-template-columns:
+      1fr 1fr;
+
+  }
+
+
+  .nf-filter
+  .nf-search {
+
+    grid-column:
+      1 / -1;
+
+  }
+
+
+  .nf-filter
+  .nf-button {
+
+    grid-column:
+      1 / -1;
+
+  }
+
+
+  .nf-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .nf-team-name {
+
+    font-size: 12px;
+
+  }
+
+
+}
+
+
+@media (
+  max-width: 430px
+) {
+
+  .nf-filter {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .nf-filter
+  .nf-search {
+
+    grid-column:
+      auto;
+
+  }
+
+
+  .nf-filter
+  .nf-button {
+
+    grid-column:
+      auto;
+
+  }
+
+
+  .nf-summary {
+
+    flex-direction:
+      column;
+
+    align-items:
+      flex-start;
+
+  }
+
+}
