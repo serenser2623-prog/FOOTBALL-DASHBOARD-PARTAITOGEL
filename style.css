@@ -1,3 +1,8 @@
+/* ==================================================
+   FOOTBALL PREDICTION CENTER V2
+   WORDPRESS / NETLIFY SAFE CSS
+================================================== */
+
 * {
   box-sizing: border-box;
 }
@@ -50,10 +55,10 @@ body {
    GLASS
 ================================================== */
 
-.nf-glass {
+#nyuk-football-app .nf-glass {
 
   background:
-    rgba(5, 18, 20, .42);
+    rgba(5,18,20,.42);
 
   border:
     1px solid
@@ -66,6 +71,7 @@ body {
     blur(18px);
 
   box-shadow:
+
     0 0 30px
     rgba(0,255,255,.08),
 
@@ -79,7 +85,7 @@ body {
    HEADER
 ================================================== */
 
-.nf-header {
+#nyuk-football-app .nf-header {
 
   position: relative;
 
@@ -94,7 +100,7 @@ body {
 }
 
 
-.nf-header::before {
+#nyuk-football-app .nf-header::before {
 
   content: "";
 
@@ -119,7 +125,32 @@ body {
 }
 
 
-.nf-brand {
+#nyuk-football-app .nf-header::after {
+
+  content: "";
+
+  position: absolute;
+
+  width: 180px;
+
+  height: 180px;
+
+  left: -90px;
+
+  bottom: -120px;
+
+  background:
+    rgba(0,255,220,.08);
+
+  filter:
+    blur(45px);
+
+  border-radius: 50%;
+
+}
+
+
+#nyuk-football-app .nf-brand {
 
   position: relative;
 
@@ -128,15 +159,16 @@ body {
 }
 
 
-.nf-title {
+#nyuk-football-app .nf-title {
 
   margin: 0;
 
-  font-size: clamp(
-    25px,
-    4vw,
-    42px
-  );
+  font-size:
+    clamp(
+      25px,
+      4vw,
+      42px
+    );
 
   font-weight: 900;
 
@@ -151,7 +183,7 @@ body {
 }
 
 
-.nf-subtitle {
+#nyuk-football-app .nf-subtitle {
 
   margin-top: 7px;
 
@@ -167,7 +199,7 @@ body {
    STATUS
 ================================================== */
 
-.nf-status {
+#nyuk-football-app .nf-status {
 
   display: inline-flex;
 
@@ -195,7 +227,7 @@ body {
 }
 
 
-.nf-status-dot {
+#nyuk-football-app .nf-status-dot {
 
   width: 7px;
 
@@ -208,6 +240,25 @@ body {
   box-shadow:
     0 0 10px #00ffd5;
 
+  animation:
+    nfPulse 1.5s ease-in-out infinite;
+
+}
+
+
+@keyframes nfPulse {
+
+  0%,
+  100% {
+    opacity: .45;
+    transform: scale(.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+
 }
 
 
@@ -215,14 +266,14 @@ body {
    FILTER
 ================================================== */
 
-.nf-filter {
+#nyuk-football-app .nf-filter {
 
   display: grid;
 
   grid-template-columns:
-    minmax(150px, 1fr)
-    minmax(150px, 1fr)
-    minmax(200px, 1.5fr)
+    minmax(150px,1fr)
+    minmax(150px,1fr)
+    minmax(200px,1.5fr)
     auto;
 
   gap: 10px;
@@ -236,9 +287,9 @@ body {
 }
 
 
-.nf-input,
-.nf-select,
-.nf-button {
+#nyuk-football-app .nf-input,
+#nyuk-football-app .nf-select,
+#nyuk-football-app .nf-button {
 
   min-height: 46px;
 
@@ -263,8 +314,16 @@ body {
 }
 
 
-.nf-input:focus,
-.nf-select:focus {
+#nyuk-football-app .nf-input::placeholder {
+
+  color:
+    rgba(220,255,255,.38);
+
+}
+
+
+#nyuk-football-app .nf-input:focus,
+#nyuk-football-app .nf-select:focus {
 
   border-color:
     rgba(0,255,255,.7);
@@ -276,16 +335,18 @@ body {
 }
 
 
-.nf-select option {
+#nyuk-football-app .nf-select option {
 
-  background: #071113;
+  background:
+    #071113;
 
-  color: white;
+  color:
+    white;
 
 }
 
 
-.nf-button {
+#nyuk-football-app .nf-button {
 
   cursor: pointer;
 
@@ -294,7 +355,8 @@ body {
 
   font-weight: 800;
 
-  color: #001516;
+  color:
+    #001516;
 
   background:
     linear-gradient(
@@ -310,19 +372,34 @@ body {
     rgba(0,255,255,.22);
 
   transition:
-    .2s ease;
+    transform .2s ease,
+    box-shadow .2s ease,
+    opacity .2s ease;
 
 }
 
 
-.nf-button:hover {
+#nyuk-football-app .nf-button:hover {
 
   transform:
-    translateY(-1px);
+    translateY(-2px);
 
   box-shadow:
     0 0 25px
-    rgba(0,255,255,.4);
+    rgba(0,255,255,.45);
+
+}
+
+
+#nyuk-football-app .nf-button:disabled {
+
+  opacity: .6;
+
+  cursor:
+    wait;
+
+  transform:
+    none;
 
 }
 
@@ -331,7 +408,7 @@ body {
    SUMMARY
 ================================================== */
 
-.nf-summary {
+#nyuk-football-app .nf-summary {
 
   display: flex;
 
@@ -347,7 +424,7 @@ body {
 }
 
 
-.nf-count {
+#nyuk-football-app .nf-count {
 
   font-size: 13px;
 
@@ -357,11 +434,16 @@ body {
 }
 
 
-.nf-date-title {
+#nyuk-football-app .nf-date-title {
 
   font-weight: 900;
 
-  color: #7ffff8;
+  color:
+    #7ffff8;
+
+  text-shadow:
+    0 0 12px
+    rgba(0,255,255,.2);
 
 }
 
@@ -370,14 +452,14 @@ body {
    MATCH GRID
 ================================================== */
 
-.nf-grid {
+#nyuk-football-app .nf-grid {
 
   display: grid;
 
   grid-template-columns:
     repeat(
       auto-fill,
-      minmax(300px, 1fr)
+      minmax(300px,1fr)
     );
 
   gap: 13px;
@@ -389,7 +471,7 @@ body {
    MATCH CARD
 ================================================== */
 
-.nf-match {
+#nyuk-football-app .nf-match {
 
   position: relative;
 
@@ -401,23 +483,32 @@ body {
 
   transition:
     transform .2s ease,
-    border-color .2s ease;
+    border-color .2s ease,
+    box-shadow .2s ease;
 
 }
 
 
-.nf-match:hover {
+#nyuk-football-app .nf-match:hover {
 
   transform:
-    translateY(-2px);
+    translateY(-3px);
 
   border-color:
     rgba(0,255,255,.55);
 
+  box-shadow:
+
+    0 0 35px
+    rgba(0,255,255,.13),
+
+    inset 0 1px 0
+    rgba(255,255,255,.08);
+
 }
 
 
-.nf-match::after {
+#nyuk-football-app .nf-match::after {
 
   content: "";
 
@@ -462,7 +553,7 @@ body {
    LEAGUE
 ================================================== */
 
-.nf-league {
+#nyuk-football-app .nf-league {
 
   display: flex;
 
@@ -477,26 +568,29 @@ body {
 }
 
 
-.nf-league img {
+#nyuk-football-app .nf-league img {
 
   width: 27px;
 
   height: 27px;
 
-  object-fit: contain;
+  object-fit:
+    contain;
 
 }
 
 
-.nf-league-name {
+#nyuk-football-app .nf-league-name {
 
   min-width: 0;
 
   overflow: hidden;
 
-  text-overflow: ellipsis;
+  text-overflow:
+    ellipsis;
 
-  white-space: nowrap;
+  white-space:
+    nowrap;
 
   font-size: 11px;
 
@@ -508,7 +602,7 @@ body {
 }
 
 
-.nf-country {
+#nyuk-football-app .nf-country {
 
   font-size: 10px;
 
@@ -522,9 +616,10 @@ body {
    TIME
 ================================================== */
 
-.nf-time {
+#nyuk-football-app .nf-time {
 
-  text-align: center;
+  text-align:
+    center;
 
   margin:
     5px 0 14px;
@@ -532,13 +627,14 @@ body {
 }
 
 
-.nf-hour {
+#nyuk-football-app .nf-hour {
 
   font-size: 22px;
 
   font-weight: 900;
 
-  color: #eaffff;
+  color:
+    #eaffff;
 
   text-shadow:
     0 0 12px
@@ -547,13 +643,14 @@ body {
 }
 
 
-.nf-status-text {
+#nyuk-football-app .nf-status-text {
 
   margin-top: 3px;
 
   font-size: 10px;
 
-  color: #72fff4;
+  color:
+    #72fff4;
 
 }
 
@@ -562,7 +659,7 @@ body {
    TEAMS
 ================================================== */
 
-.nf-teams {
+#nyuk-football-app .nf-teams {
 
   display: grid;
 
@@ -571,45 +668,55 @@ body {
     42px
     1fr;
 
-  align-items: center;
+  align-items:
+    center;
 
   gap: 8px;
 
 }
 
 
-.nf-team {
+#nyuk-football-app .nf-team {
 
   display: flex;
 
-  align-items: center;
+  align-items:
+    center;
 
   gap: 8px;
 
-}
-
-
-.nf-team-away {
-
-  flex-direction: row-reverse;
-
-  text-align: right;
+  min-width: 0;
 
 }
 
 
-.nf-team img {
+#nyuk-football-app .nf-team-away {
+
+  flex-direction:
+    row-reverse;
+
+  text-align:
+    right;
+
+}
+
+
+#nyuk-football-app .nf-team img {
 
   width: 42px;
 
   height: 42px;
 
-  object-fit: contain;
+  object-fit:
+    contain;
+
+  flex:
+    0 0 auto;
 
 }
 
 
-.nf-team-name {
+#nyuk-football-app .nf-team-name {
 
   font-size: 13px;
 
@@ -617,12 +724,16 @@ body {
 
   line-height: 1.25;
 
+  word-break:
+    normal;
+
 }
 
 
-.nf-vs {
+#nyuk-football-app .nf-vs {
 
-  text-align: center;
+  text-align:
+    center;
 
   color:
     rgba(150,255,255,.4);
@@ -635,10 +746,10 @@ body {
 
 
 /* ==================================================
-   PREDICTION
+   PREDICTION AREA
 ================================================== */
 
-.nf-prediction {
+#nyuk-football-app .nf-prediction {
 
   margin-top: 14px;
 
@@ -651,14 +762,15 @@ body {
 }
 
 
-.nf-prediction-title {
+#nyuk-football-app .nf-prediction-title {
 
   display: flex;
 
   justify-content:
     space-between;
 
-  align-items: center;
+  align-items:
+    center;
 
   font-size: 10px;
 
@@ -670,32 +782,38 @@ body {
 }
 
 
-.nf-prediction-main {
+#nyuk-football-app .nf-prediction-main {
 
   display: flex;
 
   justify-content:
     space-between;
 
-  align-items: center;
+  align-items:
+    center;
 
   gap: 10px;
 
 }
 
 
-.nf-prediction-value {
+#nyuk-football-app .nf-prediction-value {
 
   font-size: 15px;
 
   font-weight: 900;
 
-  color: #75fff5;
+  color:
+    #75fff5;
+
+  text-shadow:
+    0 0 10px
+    rgba(0,255,255,.22);
 
 }
 
 
-.nf-prediction-confidence {
+#nyuk-football-app .nf-prediction-confidence {
 
   font-size: 10px;
 
@@ -706,31 +824,715 @@ body {
 
 
 /* ==================================================
-   LOADING
+   PREDICTION DETAIL
 ================================================== */
 
-.nf-loading-screen {
+#nyuk-football-app .nf-prediction-detail {
 
-  min-height: 400px;
+  display: none;
 
-  display: flex;
-
-  flex-direction: column;
-
-  justify-content: center;
-
-  align-items: center;
-
-  text-align: center;
+  margin-top: 13px;
 
 }
 
 
-.nf-loader {
+#nyuk-football-app .nf-prediction-detail.nf-prediction-open {
 
-  width: 48px;
+  display: block;
 
-  height: 48px;
+  animation:
+    nfPredictionOpen
+    .35s ease both;
+
+}
+
+
+@keyframes nfPredictionOpen {
+
+  from {
+
+    opacity: 0;
+
+    transform:
+      translateY(-8px);
+
+  }
+
+  to {
+
+    opacity: 1;
+
+    transform:
+      translateY(0);
+
+  }
+
+}
+
+
+/* ==================================================
+   PREDICTION BOX
+================================================== */
+
+#nyuk-football-app .nf-prediction-box {
+
+  position: relative;
+
+  overflow: hidden;
+
+  padding: 13px;
+
+  border-radius: 15px;
+
+  background:
+    rgba(0,18,20,.62);
+
+  border:
+    1px solid
+    rgba(0,255,255,.25);
+
+  box-shadow:
+
+    0 0 22px
+    rgba(0,255,255,.08),
+
+    inset 0 1px 0
+    rgba(255,255,255,.04);
+
+}
+
+
+/* ==================================================
+   PREDICTION HEADER
+================================================== */
+
+#nyuk-football-app .nf-prediction-box-header {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    center;
+
+  gap: 8px;
+
+  padding-bottom:
+    10px;
+
+  margin-bottom:
+    10px;
+
+  border-bottom:
+    1px solid
+    rgba(0,255,255,.12);
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing:
+    .5px;
+
+  color:
+    #7ffff8;
+
+}
+
+
+#nyuk-football-app .nf-prediction-box-header div:last-child {
+
+  color:
+    rgba(200,255,255,.38);
+
+  font-size:
+    8px;
+
+}
+
+
+/* ==================================================
+   PREDICTED SCORE
+================================================== */
+
+#nyuk-football-app .nf-score-label {
+
+  text-align:
+    center;
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing:
+    1px;
+
+  color:
+    rgba(190,255,255,.5);
+
+}
+
+
+#nyuk-football-app .nf-predicted-score {
+
+  text-align:
+    center;
+
+  margin:
+    3px 0 13px;
+
+  font-size: 29px;
+
+  line-height: 1;
+
+  font-weight:
+    1000;
+
+  color:
+    #00fff0;
+
+  text-shadow:
+
+    0 0 7px
+    rgba(0,255,240,.7),
+
+    0 0 22px
+    rgba(0,255,255,.35);
+
+}
+
+
+/* ==================================================
+   PREDICTION GRID
+================================================== */
+
+#nyuk-football-app .nf-prediction-grid {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4,1fr);
+
+  gap: 7px;
+
+}
+
+
+/* ==================================================
+   PICK CARD
+================================================== */
+
+#nyuk-football-app .nf-pick-card {
+
+  min-width: 0;
+
+  padding:
+    9px 6px;
+
+  text-align:
+    center;
+
+  border-radius:
+    10px;
+
+  background:
+    rgba(0,0,0,.42);
+
+  border:
+    1px solid
+    rgba(0,255,255,.18);
+
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease,
+    transform .2s ease;
+
+}
+
+
+#nyuk-football-app .nf-pick-card:hover {
+
+  transform:
+    translateY(-2px);
+
+  border-color:
+    rgba(0,255,255,.48);
+
+  box-shadow:
+    0 0 15px
+    rgba(0,255,255,.08);
+
+}
+
+
+#nyuk-football-app .nf-pick-title {
+
+  font-size:
+    8px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    .7px;
+
+  color:
+    rgba(180,255,255,.55);
+
+}
+
+
+#nyuk-football-app .nf-pick-value {
+
+  margin-top:
+    5px;
+
+  font-size:
+    13px;
+
+  line-height:
+    1.2;
+
+  font-weight:
+    1000;
+
+  color:
+    #00ffb7;
+
+  text-shadow:
+    0 0 8px
+    rgba(0,255,190,.3);
+
+  word-break:
+    break-word;
+
+}
+
+
+#nyuk-football-app .nf-pick-small {
+
+  margin-top:
+    4px;
+
+  font-size:
+    7px;
+
+  line-height:
+    1.25;
+
+  color:
+    rgba(220,255,255,.42);
+
+}
+
+
+/* ==================================================
+   PERCENTAGE
+================================================== */
+
+#nyuk-football-app .nf-percent-section {
+
+  margin-top:
+    10px;
+
+  padding:
+    10px;
+
+  border-radius:
+    10px;
+
+  background:
+    rgba(0,255,255,.025);
+
+  border:
+    1px solid
+    rgba(0,255,255,.08);
+
+}
+
+
+#nyuk-football-app .nf-percent-title {
+
+  text-align:
+    center;
+
+  font-size:
+    8px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    .7px;
+
+  color:
+    rgba(190,255,255,.5);
+
+  margin-bottom:
+    8px;
+
+}
+
+
+#nyuk-football-app .nf-percent-row {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(3,1fr);
+
+  gap:
+    5px;
+
+}
+
+
+#nyuk-football-app .nf-percent-item {
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  gap:
+    3px;
+
+}
+
+
+#nyuk-football-app .nf-percent-item span {
+
+  font-size:
+    7px;
+
+  color:
+    rgba(200,255,255,.45);
+
+  font-weight:
+    800;
+
+}
+
+
+#nyuk-football-app .nf-percent-item strong {
+
+  font-size:
+    12px;
+
+  color:
+    #78fff5;
+
+  font-weight:
+    1000;
+
+}
+
+
+/* ==================================================
+   ADVICE
+================================================== */
+
+#nyuk-football-app .nf-advice {
+
+  margin-top:
+    9px;
+
+  padding:
+    9px 10px;
+
+  border-radius:
+    10px;
+
+  background:
+    rgba(0,255,200,.035);
+
+  border-left:
+    2px solid
+    #00ffd5;
+
+}
+
+
+#nyuk-football-app .nf-advice-title {
+
+  font-size:
+    8px;
+
+  font-weight:
+    900;
+
+  color:
+    rgba(190,255,255,.5);
+
+}
+
+
+#nyuk-football-app .nf-advice-value {
+
+  margin-top:
+    4px;
+
+  font-size:
+    10px;
+
+  line-height:
+    1.4;
+
+  font-weight:
+    800;
+
+  color:
+    #dffffb;
+
+}
+
+
+/* ==================================================
+   WINNER LINE
+================================================== */
+
+#nyuk-football-app .nf-winner-line {
+
+  display:
+    flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  margin-top:
+    9px;
+
+  padding-top:
+    9px;
+
+  border-top:
+    1px solid
+    rgba(0,255,255,.09);
+
+  font-size:
+    8px;
+
+  color:
+    rgba(190,255,255,.45);
+
+}
+
+
+#nyuk-football-app .nf-winner-line strong {
+
+  max-width:
+    60%;
+
+  text-align:
+    right;
+
+  font-size:
+    10px;
+
+  color:
+    #00fff0;
+
+  font-weight:
+    1000;
+
+}
+
+
+/* ==================================================
+   PREDICTION LOADING
+================================================== */
+
+#nyuk-football-app .nf-prediction-loading {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    8px;
+
+  min-height:
+    65px;
+
+  text-align:
+    center;
+
+  font-size:
+    10px;
+
+  color:
+    rgba(200,255,255,.65);
+
+}
+
+
+#nyuk-football-app .nf-mini-loader {
+
+  width:
+    17px;
+
+  height:
+    17px;
+
+  flex:
+    0 0 auto;
+
+  border:
+    2px solid
+    rgba(0,255,255,.15);
+
+  border-top-color:
+    #00fff0;
+
+  border-radius:
+    50%;
+
+  animation:
+    nfSpin .7s linear infinite;
+
+}
+
+
+@keyframes nfSpin {
+
+  to {
+
+    transform:
+      rotate(360deg);
+
+  }
+
+}
+
+
+/* ==================================================
+   PREDICTION ERROR
+================================================== */
+
+#nyuk-football-app .nf-prediction-error {
+
+  padding:
+    14px 10px;
+
+  text-align:
+    center;
+
+  border-radius:
+    10px;
+
+  background:
+    rgba(255,50,80,.04);
+
+  border:
+    1px solid
+    rgba(255,80,100,.15);
+
+  font-size:
+    10px;
+
+  line-height:
+    1.5;
+
+  color:
+    rgba(255,220,225,.75);
+
+}
+
+
+/* ==================================================
+   EMPTY / ERROR
+================================================== */
+
+#nyuk-football-app .nf-message {
+
+  padding:
+    50px 20px;
+
+  text-align:
+    center;
+
+  border-radius:
+    20px;
+
+}
+
+
+#nyuk-football-app .nf-message-title {
+
+  font-size:
+    18px;
+
+  font-weight:
+    900;
+
+}
+
+
+#nyuk-football-app .nf-message-text {
+
+  margin-top:
+    8px;
+
+  font-size:
+    12px;
+
+  color:
+    rgba(220,255,255,.55);
+
+}
+
+
+/* ==================================================
+   LOADING
+================================================== */
+
+#nyuk-football-app .nf-loading-screen {
+
+  min-height:
+    400px;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  justify-content:
+    center;
+
+  align-items:
+    center;
+
+  text-align:
+    center;
+
+}
+
+
+#nyuk-football-app .nf-loader {
+
+  width:
+    48px;
+
+  height:
+    48px;
 
   border:
     3px solid
@@ -739,7 +1541,8 @@ body {
   border-top-color:
     #00ffff;
 
-  border-radius: 50%;
+  border-radius:
+    50%;
 
   animation:
     nfSpin .8s linear infinite;
@@ -751,32 +1554,27 @@ body {
 }
 
 
-@keyframes nfSpin {
+#nyuk-football-app .nf-loading-title {
 
-  to {
-    transform:
-      rotate(360deg);
-  }
+  margin-top:
+    18px;
 
-}
+  font-weight:
+    900;
 
-
-.nf-loading-title {
-
-  margin-top: 18px;
-
-  font-weight: 900;
-
-  font-size: 14px;
+  font-size:
+    14px;
 
 }
 
 
-.nf-loading-text {
+#nyuk-football-app .nf-loading-text {
 
-  margin-top: 6px;
+  margin-top:
+    6px;
 
-  font-size: 11px;
+  font-size:
+    11px;
 
   color:
     rgba(200,255,255,.5);
@@ -785,66 +1583,22 @@ body {
 
 
 /* ==================================================
-   EMPTY / ERROR
-================================================== */
-
-.nf-message {
-
-  padding: 50px 20px;
-
-  text-align: center;
-
-  border-radius: 20px;
-
-}
-
-
-.nf-message-title {
-
-  font-size: 18px;
-
-  font-weight: 900;
-
-}
-
-
-.nf-message-text {
-
-  margin-top: 8px;
-
-  font-size: 12px;
-
-  color:
-    rgba(220,255,255,.55);
-
-}
-
-
-/* ==================================================
-   RESPONSIVE
+   RESPONSIVE TABLET
 ================================================== */
 
 @media (
-  max-width: 760px
+  max-width: 900px
 ) {
 
   #nyuk-football-app {
 
-    padding: 10px;
+    padding:
+      12px;
 
   }
 
 
-  .nf-header {
-
-    padding: 19px;
-
-    border-radius: 18px;
-
-  }
-
-
-  .nf-filter {
+  #nyuk-football-app .nf-filter {
 
     grid-template-columns:
       1fr 1fr;
@@ -852,8 +1606,7 @@ body {
   }
 
 
-  .nf-filter
-  .nf-search {
+  #nyuk-football-app .nf-filter .nf-search {
 
     grid-column:
       1 / -1;
@@ -861,8 +1614,7 @@ body {
   }
 
 
-  .nf-filter
-  .nf-button {
+  #nyuk-football-app .nf-filter .nf-button {
 
     grid-column:
       1 / -1;
@@ -870,38 +1622,89 @@ body {
   }
 
 
-  .nf-grid {
+  #nyuk-football-app .nf-grid {
 
     grid-template-columns:
-      1fr;
+      repeat(
+        2,
+        minmax(0,1fr)
+      );
 
   }
 
 
-  .nf-team-name {
+  #nyuk-football-app .nf-prediction-grid {
 
-    font-size: 12px;
+    grid-template-columns:
+      repeat(2,1fr);
 
   }
-
 
 }
 
 
+/* ==================================================
+   RESPONSIVE MOBILE
+================================================== */
+
 @media (
-  max-width: 430px
+  max-width: 600px
 ) {
 
-  .nf-filter {
+  #nyuk-football-app {
+
+    padding:
+      8px;
+
+  }
+
+
+  #nyuk-football-app .nf-header {
+
+    padding:
+      19px;
+
+    border-radius:
+      18px;
+
+  }
+
+
+  #nyuk-football-app .nf-title {
+
+    font-size:
+      clamp(
+        23px,
+        8vw,
+        32px
+      );
+
+    line-height:
+      1.05;
+
+  }
+
+
+  #nyuk-football-app .nf-subtitle {
+
+    font-size:
+      11px;
+
+  }
+
+
+  #nyuk-football-app .nf-filter {
 
     grid-template-columns:
       1fr;
 
+    padding:
+      11px;
+
   }
 
 
-  .nf-filter
-  .nf-search {
+  #nyuk-football-app .nf-filter .nf-search {
 
     grid-column:
       auto;
@@ -909,8 +1712,7 @@ body {
   }
 
 
-  .nf-filter
-  .nf-button {
+  #nyuk-football-app .nf-filter .nf-button {
 
     grid-column:
       auto;
@@ -918,13 +1720,162 @@ body {
   }
 
 
-  .nf-summary {
+  #nyuk-football-app .nf-grid {
+
+    grid-template-columns:
+      1fr;
+
+    gap:
+      10px;
+
+  }
+
+
+  #nyuk-football-app .nf-match {
+
+    padding:
+      13px;
+
+  }
+
+
+  #nyuk-football-app .nf-team img {
+
+    width:
+      38px;
+
+    height:
+      38px;
+
+  }
+
+
+  #nyuk-football-app .nf-team-name {
+
+    font-size:
+      12px;
+
+  }
+
+
+  #nyuk-football-app .nf-hour {
+
+    font-size:
+      20px;
+
+  }
+
+
+  #nyuk-football-app .nf-prediction-grid {
+
+    grid-template-columns:
+      repeat(2,1fr);
+
+  }
+
+
+  #nyuk-football-app .nf-predicted-score {
+
+    font-size:
+      27px;
+
+  }
+
+
+  #nyuk-football-app .nf-pick-value {
+
+    font-size:
+      12px;
+
+  }
+
+
+  #nyuk-football-app .nf-summary {
 
     flex-direction:
       column;
 
     align-items:
       flex-start;
+
+  }
+
+}
+
+
+/* ==================================================
+   SMALL PHONE
+================================================== */
+
+@media (
+  max-width: 380px
+) {
+
+  #nyuk-football-app .nf-header {
+
+    padding:
+      16px;
+
+  }
+
+
+  #nyuk-football-app .nf-title {
+
+    font-size:
+      22px;
+
+  }
+
+
+  #nyuk-football-app .nf-teams {
+
+    grid-template-columns:
+      minmax(0,1fr)
+      30px
+      minmax(0,1fr);
+
+  }
+
+
+  #nyuk-football-app .nf-team-name {
+
+    font-size:
+      11px;
+
+  }
+
+
+  #nyuk-football-app .nf-team img {
+
+    width:
+      34px;
+
+    height:
+      34px;
+
+  }
+
+
+  #nyuk-football-app .nf-pick-card {
+
+    padding:
+      8px 4px;
+
+  }
+
+
+  #nyuk-football-app .nf-pick-title {
+
+    font-size:
+      7px;
+
+  }
+
+
+  #nyuk-football-app .nf-pick-value {
+
+    font-size:
+      11px;
 
   }
 
