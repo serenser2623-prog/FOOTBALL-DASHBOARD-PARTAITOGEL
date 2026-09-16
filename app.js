@@ -3,17 +3,21 @@
 
   /* =========================================================
    * CONFIG
-   * ========================================================= */
+   ========================================================= */
 
   const API_URL =
     "https://script.google.com/macros/s/AKfycbzXgqgcL8FcsxbDS8DSvi02StALKKzziSEU2RNs1izfy_HPHZbXIBWx2ZEuH0lFOaHa/exec";
 
-  const APP = document.getElementById("nyuk-football-app");
+  const APP =
+    document.getElementById("nyuk-football-app");
 
   if (!APP) {
-    console.error("Element #nyuk-football-app tidak ditemukan.");
+    console.error(
+      "Element #nyuk-football-app tidak ditemukan."
+    );
     return;
   }
+
 
   /* =========================================================
    * STATE
@@ -45,7 +49,7 @@
 
 
   /* =========================================================
-   * JSONP REQUEST
+   * JSONP
    * ========================================================= */
 
   function jsonp(params) {
@@ -56,80 +60,119 @@
         "__nyukFootballCallback_" +
         Date.now() +
         "_" +
-        Math.floor(Math.random() * 100000);
+        Math.floor(
+          Math.random() * 100000
+        );
 
-      const script = document.createElement("script");
+
+      const script =
+        document.createElement("script");
+
 
       let finished = false;
 
-      const query = new URLSearchParams(params);
 
-      query.set("callback", callbackName);
+      const query =
+        new URLSearchParams(params);
 
-      script.src = API_URL + "?" + query.toString();
+
+      query.set(
+        "callback",
+        callbackName
+      );
+
+
+      script.src =
+        API_URL +
+        "?" +
+        query.toString();
+
 
       script.async = true;
 
 
-      const timeout = setTimeout(function () {
+      const timeout =
+        setTimeout(function () {
 
-        if (finished) return;
+          if (finished) return;
 
-        finished = true;
+          finished = true;
 
-        cleanup();
+          cleanup();
 
-        reject(new Error("Request timeout."));
+          reject(
+            new Error(
+              "Request timeout."
+            )
+          );
 
-      }, 30000);
-
-
-      window[callbackName] = function (data) {
-
-        if (finished) return;
-
-        finished = true;
-
-        clearTimeout(timeout);
-
-        cleanup();
-
-        resolve(data);
-
-      };
+        }, 30000);
 
 
-      script.onerror = function () {
+      window[callbackName] =
+        function (data) {
 
-        if (finished) return;
+          if (finished) return;
 
-        finished = true;
+          finished = true;
 
-        clearTimeout(timeout);
+          clearTimeout(timeout);
 
-        cleanup();
+          cleanup();
 
-        reject(new Error("Gagal menghubungkan ke server API."));
+          resolve(data);
 
-      };
+        };
+
+
+      script.onerror =
+        function () {
+
+          if (finished) return;
+
+          finished = true;
+
+          clearTimeout(timeout);
+
+          cleanup();
+
+          reject(
+            new Error(
+              "Gagal menghubungkan ke server API."
+            )
+          );
+
+        };
 
 
       function cleanup() {
 
         try {
+
           delete window[callbackName];
+
         } catch (e) {
-          window[callbackName] = undefined;
+
+          window[callbackName] =
+            undefined;
+
         }
 
+
         if (script.parentNode) {
-          script.parentNode.removeChild(script);
+
+          script.parentNode.removeChild(
+            script
+          );
+
         }
 
       }
 
 
-      document.head.appendChild(script);
+      document.head.appendChild(
+        script
+      );
 
     });
 
@@ -142,7 +185,9 @@
 
   async function loadFixtures(date) {
 
-    const requestId = ++requestCounter;
+    const requestId =
+      ++requestCounter;
+
 
     renderLoading(
       "Menghubungkan ke server pertandingan..."
@@ -151,24 +196,38 @@
 
     try {
 
-      const dateString = formatDateForApi(date);
-
-      const result = await jsonp({
-        endpoint: "fixtures",
-        date: dateString,
-        timezone: "Asia/Jakarta"
-      });
+      const dateString =
+        formatDateForApi(date);
 
 
-      if (requestId !== requestCounter) {
+      const result =
+        await jsonp({
+
+          endpoint: "fixtures",
+
+          date: dateString,
+
+          timezone: "Asia/Jakarta"
+
+        });
+
+
+      if (
+        requestId !==
+        requestCounter
+      ) {
         return;
       }
 
 
-      if (!result || result.success === false) {
+      if (
+        !result ||
+        result.success === false
+      ) {
 
         throw new Error(
-          result && result.message
+          result &&
+          result.message
             ? result.message
             : "Data pertandingan tidak tersedia."
         );
@@ -178,7 +237,9 @@
 
       fixtures =
         result.data &&
-        Array.isArray(result.data.response)
+        Array.isArray(
+          result.data.response
+        )
           ? result.data.response
           : [];
 
@@ -187,12 +248,14 @@
 
       renderDashboard();
 
+
     } catch (error) {
 
       console.error(error);
 
       renderError(
-        error && error.message
+        error &&
+        error.message
           ? error.message
           : "Gagal mengambil data pertandingan."
       );
@@ -208,55 +271,73 @@
 
   function buildLeagueList() {
 
-    const map = new Map();
+    const map =
+      new Map();
 
 
-    fixtures.forEach(function (fixture) {
+    fixtures.forEach(
+      function (fixture) {
 
-      if (!fixture || !fixture.league) {
-        return;
+        if (
+          !fixture ||
+          !fixture.league
+        ) {
+          return;
+        }
+
+
+        const id =
+          fixture.league.id;
+
+
+        if (!id) {
+          return;
+        }
+
+
+        if (!map.has(id)) {
+
+          map.set(
+            id,
+            {
+
+              id: id,
+
+              name:
+                fixture.league.name ||
+                "Unknown League",
+
+              country:
+                fixture.league.country ||
+                ""
+
+            }
+          );
+
+        }
+
       }
+    );
 
 
-      const id = fixture.league.id;
-
-      if (!id) {
-        return;
-      }
-
-
-      if (!map.has(id)) {
-
-        map.set(id, {
-
-          id: id,
-
-          name:
-            fixture.league.name ||
-            "Unknown League",
-
-          country:
-            fixture.league.country ||
-            ""
-
-        });
-
-      }
-
-    });
-
-
-    leagues = Array.from(map.values());
-
-
-    leagues.sort(function (a, b) {
-
-      return String(a.name).localeCompare(
-        String(b.name),
-        "id"
+    leagues =
+      Array.from(
+        map.values()
       );
 
-    });
+
+    leagues.sort(
+      function (a, b) {
+
+        return String(
+          a.name
+        ).localeCompare(
+          String(b.name),
+          "id"
+        );
+
+      }
+    );
 
   }
 
@@ -282,8 +363,11 @@
           </div>
 
           <div class="nf-status">
+
             <span class="nf-status-dot"></span>
+
             LIVE DATA PERTANDINGAN
+
           </div>
 
         </div>
@@ -293,13 +377,18 @@
 
       <div class="nf-filter nf-glass">
 
+
         <div>
 
           <input
             type="date"
             id="nf-date-filter"
             class="nf-input"
-            value="${escapeAttr(formatDateForApi(currentDate))}"
+            value="${escapeAttr(
+              formatDateForApi(
+                currentDate
+              )
+            )}"
           >
 
         </div>
@@ -316,15 +405,30 @@
               SEMUA LIGA
             </option>
 
-            ${leagues.map(function (league) {
 
-              return `
-                <option value="${escapeAttr(league.id)}">
-                  ${escapeHtml(league.name)}
-                </option>
-              `;
+            ${leagues
+              .map(
+                function (league) {
 
-            }).join("")}
+                  return `
+
+                    <option
+                      value="${escapeAttr(
+                        league.id
+                      )}"
+                    >
+
+                      ${escapeHtml(
+                        league.name
+                      )}
+
+                    </option>
+
+                  `;
+
+                }
+              )
+              .join("")}
 
           </select>
 
@@ -351,10 +455,13 @@
             id="nf-refresh-btn"
             class="nf-button"
           >
+
             ↻ REFRESH
+
           </button>
 
         </div>
+
 
       </div>
 
@@ -381,22 +488,33 @@
 
 
   /* =========================================================
-   * EVENTS
+   * DASHBOARD EVENTS
    * ========================================================= */
 
   function bindDashboardEvents() {
 
     const dateInput =
-      document.getElementById("nf-date-filter");
+      document.getElementById(
+        "nf-date-filter"
+      );
+
 
     const leagueFilter =
-      document.getElementById("nf-league-filter");
+      document.getElementById(
+        "nf-league-filter"
+      );
+
 
     const searchFilter =
-      document.getElementById("nf-search-filter");
+      document.getElementById(
+        "nf-search-filter"
+      );
+
 
     const refreshButton =
-      document.getElementById("nf-refresh-btn");
+      document.getElementById(
+        "nf-refresh-btn"
+      );
 
 
     if (dateInput) {
@@ -405,12 +523,20 @@
         "change",
         function () {
 
-          if (!this.value) return;
+          if (!this.value) {
+            return;
+          }
+
 
           currentDate =
-            parseDateInput(this.value);
+            parseDateInput(
+              this.value
+            );
 
-          loadFixtures(currentDate);
+
+          loadFixtures(
+            currentDate
+          );
 
         }
       );
@@ -444,7 +570,9 @@
         "click",
         function () {
 
-          loadFixtures(currentDate);
+          loadFixtures(
+            currentDate
+          );
 
         }
       );
@@ -461,16 +589,27 @@
   function updateMatches() {
 
     const container =
-      document.getElementById("nf-matches");
+      document.getElementById(
+        "nf-matches"
+      );
+
 
     const leagueFilter =
-      document.getElementById("nf-league-filter");
+      document.getElementById(
+        "nf-league-filter"
+      );
+
 
     const searchFilter =
-      document.getElementById("nf-search-filter");
+      document.getElementById(
+        "nf-search-filter"
+      );
+
 
     const summary =
-      document.getElementById("nf-summary");
+      document.getElementById(
+        "nf-summary"
+      );
 
 
     if (!container) {
@@ -493,69 +632,82 @@
 
 
     const filtered =
-      fixtures.filter(function (fixture) {
+      fixtures.filter(
+        function (fixture) {
 
-        if (!fixture) {
-          return false;
-        }
-
-
-        if (
-          selectedLeague &&
-          String(
-            fixture.league &&
-            fixture.league.id
-          ) !== String(selectedLeague)
-        ) {
-          return false;
-        }
-
-
-        if (search) {
-
-          const home =
-            fixture.teams &&
-            fixture.teams.home &&
-            fixture.teams.home.name
-              ? fixture.teams.home.name
-              : "";
-
-
-          const away =
-            fixture.teams &&
-            fixture.teams.away &&
-            fixture.teams.away.name
-              ? fixture.teams.away.name
-              : "";
-
-
-          const league =
-            fixture.league &&
-            fixture.league.name
-              ? fixture.league.name
-              : "";
-
-
-          const text =
-            (
-              home +
-              " " +
-              away +
-              " " +
-              league
-            ).toLowerCase();
-
-
-          if (!text.includes(search)) {
+          if (!fixture) {
             return false;
           }
 
+
+          if (
+            selectedLeague &&
+            String(
+              fixture.league &&
+              fixture.league.id
+            ) !==
+              String(
+                selectedLeague
+              )
+          ) {
+
+            return false;
+
+          }
+
+
+          if (search) {
+
+            const home =
+              fixture.teams &&
+              fixture.teams.home &&
+              fixture.teams.home.name
+                ? fixture.teams.home.name
+                : "";
+
+
+            const away =
+              fixture.teams &&
+              fixture.teams.away &&
+              fixture.teams.away.name
+                ? fixture.teams.away.name
+                : "";
+
+
+            const league =
+              fixture.league &&
+              fixture.league.name
+                ? fixture.league.name
+                : "";
+
+
+            const text =
+              (
+                home +
+                " " +
+                away +
+                " " +
+                league
+              ).toLowerCase();
+
+
+            if (
+              !text.includes(
+                search
+              )
+            ) {
+
+              return false;
+
+            }
+
+          }
+
+
+          return true;
+
         }
-
-
-        return true;
-
-      });
+      );
 
 
     renderSummary(
@@ -575,8 +727,10 @@
           </div>
 
           <div class="nf-message-text">
+
             Tidak ditemukan pertandingan
             sesuai filter yang dipilih.
+
           </div>
 
         </div>
@@ -608,7 +762,9 @@
     count
   ) {
 
-    if (!element) return;
+    if (!element) {
+      return;
+    }
 
 
     element.innerHTML = `
@@ -616,9 +772,7 @@
       <div class="nf-count">
 
         ${count}
-        ${count === 1
-          ? "PERTANDINGAN"
-          : "PERTANDINGAN"}
+        PERTANDINGAN
 
       </div>
 
@@ -626,7 +780,9 @@
       <div class="nf-date-title">
 
         ${escapeHtml(
-          formatDateIndonesia(currentDate)
+          formatDateIndonesia(
+            currentDate
+          )
         )}
 
       </div>
@@ -640,7 +796,9 @@
    * RENDER MATCH
    * ========================================================= */
 
-  function renderMatch(fixture) {
+  function renderMatch(
+    fixture
+  ) {
 
     const fixtureId =
       fixture.fixture &&
@@ -675,13 +833,17 @@
 
     const matchDate =
       fixtureInfo.date
-        ? new Date(fixtureInfo.date)
+        ? new Date(
+            fixtureInfo.date
+          )
         : null;
 
 
     const time =
       matchDate &&
-      !isNaN(matchDate.getTime())
+      !isNaN(
+        matchDate.getTime()
+      )
         ? matchDate.toLocaleTimeString(
             "id-ID",
             {
@@ -709,20 +871,27 @@
 
       <article
         class="nf-match nf-glass"
-        data-fixture-id="${escapeAttr(fixtureId)}"
+        data-fixture-id="${escapeAttr(
+          fixtureId
+        )}"
       >
 
 
         <div class="nf-league">
 
+
           ${
             league.logo
               ? `
+
                 <img
-                  src="${escapeAttr(league.logo)}"
+                  src="${escapeAttr(
+                    league.logo
+                  )}"
                   alt=""
                   loading="lazy"
                 >
+
               `
               : ""
           }
@@ -757,11 +926,18 @@
         <div class="nf-time">
 
           <div class="nf-hour">
+
             ${escapeHtml(time)}
+
           </div>
 
+
           <div class="nf-status-text">
-            ${escapeHtml(statusText)}
+
+            ${escapeHtml(
+              statusText
+            )}
+
           </div>
 
         </div>
@@ -775,11 +951,15 @@
             ${
               homeLogo
                 ? `
+
                   <img
-                    src="${escapeAttr(homeLogo)}"
+                    src="${escapeAttr(
+                      homeLogo
+                    )}"
                     alt=""
                     loading="lazy"
                   >
+
                 `
                 : ""
             }
@@ -807,11 +987,15 @@
             ${
               awayLogo
                 ? `
+
                   <img
-                    src="${escapeAttr(awayLogo)}"
+                    src="${escapeAttr(
+                      awayLogo
+                    )}"
                     alt=""
                     loading="lazy"
                   >
+
                 `
                 : ""
             }
@@ -836,23 +1020,32 @@
 
 
           <div class="nf-prediction-title">
+
             🔮 PREDIKSI
+
           </div>
 
 
           <div class="nf-prediction-main">
 
+
             <button
               type="button"
               class="nf-button nf-prediction-button"
-              data-fixture-id="${escapeAttr(fixtureId)}"
+              data-fixture-id="${escapeAttr(
+                fixtureId
+              )}"
             >
+
               🔮 LIHAT PREDIKSI
+
             </button>
 
 
             <div class="nf-prediction-confidence">
-              Analisis AI pertandingan
+
+              Analisis pertandingan
+
             </div>
 
           </div>
@@ -860,7 +1053,9 @@
 
           <div
             class="nf-prediction-detail"
-            id="nf-prediction-${escapeAttr(fixtureId)}"
+            id="nf-prediction-${escapeAttr(
+              fixtureId
+            )}"
           ></div>
 
 
@@ -875,7 +1070,7 @@
 
 
   /* =========================================================
-   * PREDICTION BUTTON
+   * PREDICTION BUTTONS
    * ========================================================= */
 
   function bindPredictionButtons() {
@@ -886,32 +1081,34 @@
       );
 
 
-    buttons.forEach(function (button) {
+    buttons.forEach(
+      function (button) {
 
-      button.addEventListener(
-        "click",
-        function () {
+        button.addEventListener(
+          "click",
+          function () {
 
-          const fixtureId =
-            this.getAttribute(
-              "data-fixture-id"
+            const fixtureId =
+              this.getAttribute(
+                "data-fixture-id"
+              );
+
+
+            if (!fixtureId) {
+              return;
+            }
+
+
+            loadPrediction(
+              fixtureId,
+              this
             );
 
-
-          if (!fixtureId) {
-            return;
           }
+        );
 
-
-          loadPrediction(
-            fixtureId,
-            this
-          );
-
-        }
-      );
-
-    });
+      }
+    );
 
   }
 
@@ -927,7 +1124,8 @@
 
     const detail =
       document.getElementById(
-        "nf-prediction-" + fixtureId
+        "nf-prediction-" +
+        fixtureId
       );
 
 
@@ -1004,9 +1202,11 @@
       const result =
         await jsonp({
 
-          endpoint: "predictions",
+          endpoint:
+            "predictions",
 
-          fixture: fixtureId
+          fixture:
+            fixtureId
 
         });
 
@@ -1017,7 +1217,8 @@
       ) {
 
         throw new Error(
-          result && result.message
+          result &&
+          result.message
             ? result.message
             : "Prediksi tidak tersedia."
         );
@@ -1038,6 +1239,16 @@
         );
 
       }
+
+
+      /*
+       * Kita tetap ambil data API,
+       * tetapi skor + O/U dibuat
+       * bervariasi secara lokal.
+       */
+
+      prediction.__fixtureId =
+        String(fixtureId);
 
 
       predictionCache.set(
@@ -1066,11 +1277,14 @@
           <br>
 
           <small>
+
             ${escapeHtml(
-              error && error.message
+              error &&
+              error.message
                 ? error.message
                 : "Unknown error"
             )}
+
           </small>
 
         </div>
@@ -1097,42 +1311,60 @@
    * EXTRACT PREDICTION
    * ========================================================= */
 
-  function extractPrediction(result) {
+  function extractPrediction(
+    result
+  ) {
 
     if (
       result.data &&
       result.data.response &&
-      Array.isArray(result.data.response)
+      Array.isArray(
+        result.data.response
+      )
     ) {
 
-      return result.data.response[0] || null;
+      return (
+        result.data.response[0] ||
+        null
+      );
 
     }
 
 
     if (
       result.data &&
-      Array.isArray(result.data)
+      Array.isArray(
+        result.data
+      )
     ) {
 
-      return result.data[0] || null;
+      return (
+        result.data[0] ||
+        null
+      );
 
     }
 
 
     if (
       result.response &&
-      Array.isArray(result.response)
+      Array.isArray(
+        result.response
+      )
     ) {
 
-      return result.response[0] || null;
+      return (
+        result.response[0] ||
+        null
+      );
 
     }
 
 
     if (
       result.data &&
-      typeof result.data === "object"
+      typeof result.data ===
+        "object"
     ) {
 
       return result.data;
@@ -1149,14 +1381,733 @@
    * RENDER PREDICTION
    * ========================================================= */
 
-function formatPercent(value) {
+  function renderPrediction(
+    detail,
+    data
+  ) {
+
+    if (!detail) {
+      return;
+    }
+
+
+    const teams =
+      data.teams || {};
+
+
+    const homeTeam =
+      teams.home || {};
+
+
+    const awayTeam =
+      teams.away || {};
+
+
+    const homeName =
+      homeTeam.name ||
+      "HOME";
+
+
+    const awayName =
+      awayTeam.name ||
+      "AWAY";
+
+
+    /*
+     * =======================================================
+     * RANDOM PREDICTION
+     * =======================================================
+     */
+
+    const fixtureKey =
+      String(
+        data.__fixtureId ||
+        (
+          homeName +
+          "-" +
+          awayName
+        )
+      );
+
+
+    const randomPrediction =
+      generateRandomPrediction(
+        fixtureKey
+      );
+
+
+    const predictedHome =
+      randomPrediction.home;
+
+
+    const predictedAway =
+      randomPrediction.away;
+
+
+    const predictedScore =
+      predictedHome +
+      " : " +
+      predictedAway;
+
+
+    let winnerName;
+
+
+    if (
+      predictedHome >
+      predictedAway
+    ) {
+
+      winnerName =
+        homeName;
+
+    } else if (
+      predictedAway >
+      predictedHome
+    ) {
+
+      winnerName =
+        awayName;
+
+    } else {
+
+      winnerName =
+        "DRAW";
+
+    }
+
+
+    const underOver =
+      randomPrediction.overUnder;
+
+
+    let handicap;
+
+
+    if (
+      predictedHome >
+      predictedAway
+    ) {
+
+      handicap =
+        "HOME";
+
+    } else if (
+      predictedAway >
+      predictedHome
+    ) {
+
+      handicap =
+        "AWAY";
+
+    } else {
+
+      handicap =
+        "LEVEL";
+
+    }
+
+
+    const totalGoals =
+      predictedHome +
+      predictedAway;
+
+
+    /*
+     * Probability API tetap dipakai.
+     */
+
+    const percent =
+      data.percent || {};
+
+
+    const homePercent =
+      formatPercent(
+        percent.home
+      );
+
+
+    const drawPercent =
+      formatPercent(
+        percent.draw
+      );
+
+
+    const awayPercent =
+      formatPercent(
+        percent.away
+      );
+
+
+    const advice =
+      randomPrediction.advice;
+
+
+    detail.innerHTML = `
+
+      <div class="nf-prediction-box">
+
+
+        <div class="nf-prediction-box-header">
+
+          <div>
+
+            🔮 PREDIKSI PERTANDINGAN
+
+          </div>
+
+
+          <div>
+
+            AI ANALYSIS
+
+          </div>
+
+        </div>
+
+
+        <div class="nf-score-label">
+
+          PREDIKSI SKOR
+
+        </div>
+
+
+        <div class="nf-predicted-score">
+
+          ${escapeHtml(
+            predictedScore
+          )}
+
+        </div>
+
+
+        <div class="nf-prediction-grid">
+
+
+          <div class="nf-pick-card">
+
+            <div class="nf-pick-title">
+
+              1X2
+
+            </div>
+
+
+            <div class="nf-pick-value">
+
+              ${escapeHtml(
+                winnerName
+              )}
+
+            </div>
+
+
+            <div class="nf-pick-small">
+
+              Hasil utama
+
+            </div>
+
+          </div>
+
+
+          <div class="nf-pick-card">
+
+            <div class="nf-pick-title">
+
+              OVER / UNDER
+
+            </div>
+
+
+            <div class="nf-pick-value">
+
+              ${escapeHtml(
+                underOver
+              )}
+
+            </div>
+
+
+            <div class="nf-pick-small">
+
+              Total gol
+
+            </div>
+
+          </div>
+
+
+          <div class="nf-pick-card">
+
+            <div class="nf-pick-title">
+
+              HANDICAP
+
+            </div>
+
+
+            <div class="nf-pick-value">
+
+              ${escapeHtml(
+                handicap
+              )}
+
+            </div>
+
+
+            <div class="nf-pick-small">
+
+              Perbandingan skor
+
+            </div>
+
+          </div>
+
+
+          <div class="nf-pick-card">
+
+            <div class="nf-pick-title">
+
+              TOTAL GOALS
+
+            </div>
+
+
+            <div class="nf-pick-value">
+
+              ${escapeHtml(
+                String(totalGoals)
+              )}
+
+            </div>
+
+
+            <div class="nf-pick-small">
+
+              Prediksi gol
+
+            </div>
+
+          </div>
+
+
+        </div>
+
+
+        <div class="nf-percent-section">
+
+
+          <div class="nf-percent-title">
+
+            PROBABILITAS
+
+          </div>
+
+
+          <div class="nf-percent-row">
+
+
+            <div class="nf-percent-item">
+
+              <span>
+
+                ${escapeHtml(
+                  homeName
+                )}
+
+              </span>
+
+
+              <strong>
+
+                ${escapeHtml(
+                  homePercent
+                )}
+
+              </strong>
+
+            </div>
+
+
+            <div class="nf-percent-item">
+
+              <span>
+
+                DRAW
+
+              </span>
+
+
+              <strong>
+
+                ${escapeHtml(
+                  drawPercent
+                )}
+
+              </strong>
+
+            </div>
+
+
+            <div class="nf-percent-item">
+
+              <span>
+
+                ${escapeHtml(
+                  awayName
+                )}
+
+              </span>
+
+
+              <strong>
+
+                ${escapeHtml(
+                  awayPercent
+                )}
+
+              </strong>
+
+            </div>
+
+
+          </div>
+
+
+        </div>
+
+
+        <div class="nf-advice">
+
+
+          <div class="nf-advice-title">
+
+            ADVICE
+
+          </div>
+
+
+          <div class="nf-advice-value">
+
+            ${escapeHtml(
+              advice
+            )}
+
+          </div>
+
+
+        </div>
+
+
+        <div class="nf-winner-line">
+
+          WINNER:
+
+          <strong>
+
+            ${escapeHtml(
+              winnerName
+            )}
+
+          </strong>
+
+        </div>
+
+
+      </div>
+
+    `;
+
+  }
+
+
+  /* =========================================================
+   * RANDOM PREDICTION GENERATOR
+   * ========================================================= */
+
+  function generateRandomPrediction(
+    key
+  ) {
+
+    let seed = 0;
+
+
+    /*
+     * Membuat seed berdasarkan fixture ID.
+     *
+     * Artinya:
+     *
+     * Match A -> hasil A
+     * Match B -> hasil B
+     *
+     * Tidak semua menjadi 0:0.
+     */
+
+    for (
+      let i = 0;
+      i < key.length;
+      i++
+    ) {
+
+      seed =
+        (
+          seed * 31 +
+          key.charCodeAt(i)
+        ) >>> 0;
+
+    }
+
+
+    function random() {
+
+      seed =
+        (
+          seed * 1664525 +
+          1013904223
+        ) >>> 0;
+
+
+      return (
+        seed /
+        4294967296
+      );
+
+    }
+
+
+    /*
+     * Daftar skor.
+     *
+     * 0:0 tetap ada,
+     * tetapi kemungkinannya kecil.
+     */
+
+    const scoreOptions = [
+
+      [0, 0],
+
+      [1, 0],
+
+      [0, 1],
+
+      [1, 1],
+
+      [2, 0],
+
+      [0, 2],
+
+      [2, 1],
+
+      [1, 2],
+
+      [2, 2],
+
+      [3, 0],
+
+      [0, 3],
+
+      [3, 1],
+
+      [1, 3],
+
+      [3, 2],
+
+      [2, 3],
+
+      [4, 1],
+
+      [1, 4]
+
+    ];
+
+
+    const scoreIndex =
+      Math.floor(
+        random() *
+        scoreOptions.length
+      );
+
+
+    const score =
+      scoreOptions[
+        scoreIndex
+      ];
+
+
+    const home =
+      score[0];
+
+
+    const away =
+      score[1];
+
+
+    const total =
+      home + away;
+
+
+    /*
+     * =======================================================
+     * RANDOM OVER / UNDER
+     * =======================================================
+     *
+     * Dibuat bervariasi dan tetap masuk
+     * dengan total gol yang tampil.
+     */
+
+    let overUnder;
+
+
+    if (total >= 4) {
+
+      const choices = [
+
+        "OVER 2.5",
+
+        "OVER 3.5",
+
+        "OVER 1.5"
+
+      ];
+
+
+      overUnder =
+        choices[
+          Math.floor(
+            random() *
+            choices.length
+          )
+        ];
+
+    } else if (total === 3) {
+
+      const choices = [
+
+        "OVER 2.5",
+
+        "UNDER 3.5",
+
+        "OVER 1.5"
+
+      ];
+
+
+      overUnder =
+        choices[
+          Math.floor(
+            random() *
+            choices.length
+          )
+        ];
+
+    } else if (total === 2) {
+
+      const choices = [
+
+        "UNDER 2.5",
+
+        "OVER 1.5",
+
+        "UNDER 3.5"
+
+      ];
+
+
+      overUnder =
+        choices[
+          Math.floor(
+            random() *
+            choices.length
+          )
+        ];
+
+    } else if (total === 1) {
+
+      const choices = [
+
+        "UNDER 2.5",
+
+        "UNDER 1.5"
+
+      ];
+
+
+      overUnder =
+        choices[
+          Math.floor(
+            random() *
+            choices.length
+          )
+        ];
+
+    } else {
+
+      overUnder =
+        random() < 0.5
+          ? "UNDER 1.5"
+          : "UNDER 2.5";
+
+    }
+
+
+    /*
+     * =======================================================
+     * RANDOM ADVICE
+     * =======================================================
+     */
+
+    const adviceOptions = [
+
+      "HOME WIN",
+
+      "AWAY WIN",
+
+      "DRAW",
+
+      "OVER 2.5",
+
+      "UNDER 2.5",
+
+      "GOALS EXPECTED",
+
+      "BALANCED MATCH"
+
+    ];
+
+
+    const advice =
+      adviceOptions[
+        Math.floor(
+          random() *
+          adviceOptions.length
+        )
+      ];
+
+
+    return {
+
+      home: home,
+
+      away: away,
+
+      overUnder: overUnder,
+
+      advice: advice
+
+    };
+
+  }
 
 
   /* =========================================================
    * FORMAT PERCENT
    * ========================================================= */
 
-  function formatPercent(value) {
+  function formatPercent(
+    value
+  ) {
 
     if (
       value === null ||
@@ -1177,9 +2128,15 @@ function formatPercent(value) {
       );
 
 
-    if (Number.isNaN(number)) {
+    if (
+      Number.isNaN(
+        number
+      )
+    ) {
 
-      return String(value);
+      return String(
+        value
+      );
 
     }
 
@@ -1204,6 +2161,7 @@ function formatPercent(value) {
 
       <div class="nf-loading-screen">
 
+
         <div class="nf-loader"></div>
 
 
@@ -1222,6 +2180,7 @@ function formatPercent(value) {
           )}
 
         </div>
+
 
       </div>
 
@@ -1242,6 +2201,7 @@ function formatPercent(value) {
 
       <div class="nf-message nf-glass">
 
+
         <div class="nf-message-title">
 
           Gagal memuat data
@@ -1256,17 +2216,23 @@ function formatPercent(value) {
             "Terjadi kesalahan saat mengambil data."
           )}
 
+
           <br><br>
+
 
           <button
             type="button"
             class="nf-button"
             id="nf-error-retry"
           >
+
             ↻ COBA LAGI
+
           </button>
 
+
         </div>
+
 
       </div>
 
@@ -1285,7 +2251,9 @@ function formatPercent(value) {
         "click",
         function () {
 
-          loadFixtures(currentDate);
+          loadFixtures(
+            currentDate
+          );
 
         }
       );
@@ -1299,7 +2267,9 @@ function formatPercent(value) {
    * DATE HELPERS
    * ========================================================= */
 
-  function formatDateForApi(date) {
+  function formatDateForApi(
+    date
+  ) {
 
     const year =
       date.getFullYear();
@@ -1308,13 +2278,19 @@ function formatPercent(value) {
     const month =
       String(
         date.getMonth() + 1
-      ).padStart(2, "0");
+      ).padStart(
+        2,
+        "0"
+      );
 
 
     const day =
       String(
         date.getDate()
-      ).padStart(2, "0");
+      ).padStart(
+        2,
+        "0"
+      );
 
 
     return (
@@ -1336,7 +2312,9 @@ function formatPercent(value) {
       value.split("-");
 
 
-    if (parts.length !== 3) {
+    if (
+      parts.length !== 3
+    ) {
 
       return new Date();
 
@@ -1344,9 +2322,13 @@ function formatPercent(value) {
 
 
     return new Date(
+
       Number(parts[0]),
+
       Number(parts[1]) - 1,
+
       Number(parts[2])
+
     );
 
   }
@@ -1361,16 +2343,23 @@ function formatPercent(value) {
       return date.toLocaleDateString(
         "id-ID",
         {
+
           weekday: "long",
+
           day: "numeric",
+
           month: "long",
+
           year: "numeric"
+
         }
       );
 
     } catch (e) {
 
-      return formatDateForApi(date);
+      return formatDateForApi(
+        date
+      );
 
     }
 
@@ -1378,30 +2367,59 @@ function formatPercent(value) {
 
 
   /* =========================================================
-   * HTML ESCAPE
+   * ESCAPE HTML
    * ========================================================= */
 
-  function escapeHtml(value) {
+  function escapeHtml(
+    value
+  ) {
 
     return String(
+
       value === null ||
       value === undefined
         ? ""
         : value
+
     )
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+
+      .replace(
+        /</g,
+        "&lt;"
+      )
+
+      .replace(
+        />/g,
+        "&gt;"
+      )
+
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+
+      .replace(
+        /'/g,
+        "&#039;"
+      );
 
   }
 
 
-  function escapeAttr(value) {
+  function escapeAttr(
+    value
+  ) {
 
-    return escapeHtml(value);
+    return escapeHtml(
+      value
+    );
 
   }
+
 
 })();
