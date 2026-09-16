@@ -30,6 +30,7 @@
 
   var requestCounter = 0;
 
+  var predictionCache = {};
 
 
   /* ==================================================
@@ -41,7 +42,6 @@
   loadFixtures(
     currentDate
   );
-
 
 
   /* ==================================================
@@ -85,7 +85,6 @@
     );
 
   }
-
 
 
   /* ==================================================
@@ -133,7 +132,6 @@
 
 
     var query = [];
-
 
 
     Object.keys(
@@ -258,7 +256,6 @@
   }
 
 
-
   /* ==================================================
      LOAD FIXTURES
   ================================================== */
@@ -363,7 +360,6 @@
   }
 
 
-
   /* ==================================================
      BUILD LEAGUES
   ================================================== */
@@ -425,7 +421,6 @@
     );
 
   }
-
 
 
   /* ==================================================
@@ -534,7 +529,6 @@
   }
 
 
-
   /* ==================================================
      LEAGUE OPTIONS
   ================================================== */
@@ -570,9 +564,11 @@
                 )
               )}"
             >
+
               ${escapeHtml(
                 league.name
               )}
+
               ${
                 league.country
                   ? " — " +
@@ -581,6 +577,7 @@
                     )
                   : ""
               }
+
             </option>
 
           `;
@@ -590,7 +587,6 @@
       .join("");
 
   }
-
 
 
   /* ==================================================
@@ -659,7 +655,6 @@
     );
 
   }
-
 
 
   /* ==================================================
@@ -800,7 +795,6 @@
   }
 
 
-
   /* ==================================================
      MATCH CARD
   ================================================== */
@@ -885,7 +879,10 @@
 
     return `
 
-      <article class="nf-match nf-glass">
+      <article
+        class="nf-match nf-glass"
+        data-fixture-card="${fixture.id || ""}"
+      >
 
         <div class="nf-league">
 
@@ -1020,17 +1017,24 @@
 
           <div class="nf-prediction-main">
 
-            <div
-              class="nf-prediction-value"
-            >
+            <div class="nf-prediction-value">
               Belum dimuat
             </div>
+
 
             ${
               predictionButton
             }
 
           </div>
+
+
+          <!-- DETAIL PREDICTION AKAN MUNCUL DI SINI -->
+
+          <div
+            class="nf-prediction-detail"
+            id="prediction-detail-${fixture.id}"
+          ></div>
 
         </div>
 
@@ -1041,9 +1045,8 @@
   }
 
 
-
   /* ==================================================
-     PREDICTION
+     PREDICTION BUTTON
   ================================================== */
 
   document.addEventListener(
@@ -1076,6 +1079,9 @@
   );
 
 
+  /* ==================================================
+     LOAD PREDICTION
+  ================================================== */
 
   function loadPrediction(
     fixture,
@@ -1094,12 +1100,85 @@
     }
 
 
+    var detail =
+      document.getElementById(
+        "prediction-detail-" +
+        fixture
+      );
+
+
+    if (!detail) {
+      return;
+    }
+
+
+    /* ==============================================
+       TOGGLE JIKA SUDAH TERBUKA
+    ============================================== */
+
+    if (
+      detail.classList.contains(
+        "nf-prediction-open"
+      )
+    ) {
+
+      detail.classList.remove(
+        "nf-prediction-open"
+      );
+
+      button.textContent =
+        "🔮 LIHAT PREDIKSI";
+
+      return;
+
+    }
+
+
+    /* ==============================================
+       CACHE
+    ============================================== */
+
+    if (
+      predictionCache[fixture]
+    ) {
+
+      renderPrediction(
+        fixture,
+        predictionCache[fixture],
+        button
+      );
+
+      return;
+
+    }
+
+
     button.disabled =
       true;
 
 
     button.textContent =
-      "LOADING...";
+      "⏳ MENGAMBIL PREDIKSI...";
+
+
+    detail.innerHTML = `
+
+      <div class="nf-prediction-loading">
+
+        <div class="nf-mini-loader"></div>
+
+        <div>
+          Mengambil analisis pertandingan...
+        </div>
+
+      </div>
+
+    `;
+
+
+    detail.classList.add(
+      "nf-prediction-open"
+    );
 
 
     jsonp(
@@ -1125,8 +1204,20 @@
 
         if (error) {
 
+          detail.innerHTML = `
+
+            <div class="nf-prediction-error">
+              ⚠️ Gagal mengambil prediksi.
+              <br>
+              ${escapeHtml(
+                error.message
+              )}
+            </div>
+
+          `;
+
           button.textContent =
-            "RETRY";
+            "🔄 COBA LAGI";
 
           return;
 
@@ -1138,8 +1229,16 @@
           !result.success
         ) {
 
+          detail.innerHTML = `
+
+            <div class="nf-prediction-error">
+              ⚠️ Data prediksi tidak tersedia.
+            </div>
+
+          `;
+
           button.textContent =
-            "NO DATA";
+            "🔄 COBA LAGI";
 
           return;
 
@@ -1155,102 +1254,31 @@
 
         if (!data) {
 
+          detail.innerHTML = `
+
+            <div class="nf-prediction-error">
+              ⚠️ Belum ada prediksi untuk pertandingan ini.
+            </div>
+
+          `;
+
           button.textContent =
-            "NO PREDICTION";
+            "🔮 LIHAT PREDIKSI";
 
           return;
 
         }
 
 
-        var prediction =
-          data.predictions ||
-          {};
+        predictionCache[fixture] =
+          data;
 
 
-        var winner =
-          prediction.winner ||
-          {};
-
-
-        var percent =
-          prediction.percent ||
-          {};
-
-
-        var advice =
-          prediction.advice ||
-          "Analysis tersedia";
-
-
-        var value =
-          winner.name ||
-          prediction.under_over ||
-          "No clear prediction";
-
-
-        var confidence =
-          winner.comment ||
-          "";
-
-
-        var main =
-          card.querySelector(
-            ".nf-prediction-main"
-          );
-
-
-        main.innerHTML = `
-
-          <div>
-
-            <div class="nf-prediction-value">
-              ${escapeHtml(
-                value
-              )}
-            </div>
-
-            <div class="nf-prediction-confidence">
-              ${escapeHtml(
-                advice
-              )}
-            </div>
-
-          </div>
-
-
-          <div class="nf-prediction-confidence">
-
-            ${
-              percent.home
-                ? "HOME " +
-                  escapeHtml(
-                    percent.home
-                  )
-                : ""
-            }
-
-            ${
-              percent.draw
-                ? " • DRAW " +
-                  escapeHtml(
-                    percent.draw
-                  )
-                : ""
-            }
-
-            ${
-              percent.away
-                ? " • AWAY " +
-                  escapeHtml(
-                    percent.away
-                  )
-                : ""
-            }
-
-          </div>
-
-        `;
+        renderPrediction(
+          fixture,
+          data,
+          button
+        );
 
       }
 
@@ -1258,6 +1286,487 @@
 
   }
 
+
+  /* ==================================================
+     RENDER PREDICTION DETAIL
+  ================================================== */
+
+  function renderPrediction(
+    fixture,
+    data,
+    button
+  ) {
+
+    var detail =
+      document.getElementById(
+        "prediction-detail-" +
+        fixture
+      );
+
+
+    if (!detail) {
+      return;
+    }
+
+
+    var prediction =
+      data.predictions ||
+      {};
+
+
+    var winner =
+      prediction.winner ||
+      {};
+
+
+    var percent =
+      prediction.percent ||
+      {};
+
+
+    var goals =
+      prediction.goals ||
+      {};
+
+
+    var homeGoal =
+      cleanPredictionValue(
+        goals.home
+      );
+
+
+    var awayGoal =
+      cleanPredictionValue(
+        goals.away
+      );
+
+
+    var score =
+      homeGoal !== "—" &&
+      awayGoal !== "—"
+
+        ? homeGoal +
+          " - " +
+          awayGoal
+
+        : "—";
+
+
+    var winnerName =
+      winner.name ||
+      "No clear prediction";
+
+
+    var underOver =
+      prediction.under_over ||
+      "—";
+
+
+    var advice =
+      prediction.advice ||
+      "Analysis tersedia";
+
+
+    var homePercent =
+      formatPercent(
+        percent.home
+      );
+
+
+    var drawPercent =
+      formatPercent(
+        percent.draw
+      );
+
+
+    var awayPercent =
+      formatPercent(
+        percent.away
+      );
+
+
+    var handicap =
+      buildHandicapPrediction(
+        prediction,
+        winner,
+        homeGoal,
+        awayGoal
+      );
+
+
+    detail.innerHTML = `
+
+      <div class="nf-prediction-box">
+
+        <div class="nf-prediction-box-header">
+
+          <div>
+            🔮 MATCH PREDICTION
+          </div>
+
+          <div>
+            #${escapeHtml(
+              String(fixture)
+            )}
+          </div>
+
+        </div>
+
+
+        <div class="nf-score-label">
+          PREDIKSI SKOR
+        </div>
+
+
+        <div class="nf-predicted-score">
+
+          ${escapeHtml(
+            score
+          )}
+
+        </div>
+
+
+        <div class="nf-prediction-grid">
+
+
+          <!-- HANDICAP -->
+
+          <div class="nf-pick-card">
+
+            <div class="nf-pick-title">
+              HANDICAP
+            </div>
+
+            <div class="nf-pick-value">
+              ${escapeHtml(
+                handicap
+              )}
+            </div>
+
+            <div class="nf-pick-small">
+              Berdasarkan analisis
+            </div>
+
+          </div>
+
+
+          <!-- OVER UNDER -->
+
+          <div class="nf-pick-card">
+
+            <div class="nf-pick-title">
+              OVER / UNDER
+            </div>
+
+            <div class="nf-pick-value">
+              ${escapeHtml(
+                underOver
+              )}
+            </div>
+
+            <div class="nf-pick-small">
+              Total gol
+            </div>
+
+          </div>
+
+
+          <!-- 1X2 -->
+
+          <div class="nf-pick-card">
+
+            <div class="nf-pick-title">
+              1X2
+            </div>
+
+            <div class="nf-pick-value">
+              ${escapeHtml(
+                winnerName
+              )}
+            </div>
+
+            <div class="nf-pick-small">
+              Match winner
+            </div>
+
+          </div>
+
+
+          <!-- SCORE -->
+
+          <div class="nf-pick-card">
+
+            <div class="nf-pick-title">
+              SKOR AKURAT
+            </div>
+
+            <div class="nf-pick-value">
+              ${escapeHtml(
+                score
+              )}
+            </div>
+
+            <div class="nf-pick-small">
+              Top prediction
+            </div>
+
+          </div>
+
+
+        </div>
+
+
+        <!-- PERCENTAGE -->
+
+        <div class="nf-percent-section">
+
+          <div class="nf-percent-title">
+            PROBABILITAS HASIL
+          </div>
+
+
+          <div class="nf-percent-row">
+
+
+            <div class="nf-percent-item">
+
+              <span>
+                HOME
+              </span>
+
+              <strong>
+                ${escapeHtml(
+                  homePercent
+                )}
+              </strong>
+
+            </div>
+
+
+            <div class="nf-percent-item">
+
+              <span>
+                DRAW
+              </span>
+
+              <strong>
+                ${escapeHtml(
+                  drawPercent
+                )}
+              </strong>
+
+            </div>
+
+
+            <div class="nf-percent-item">
+
+              <span>
+                AWAY
+              </span>
+
+              <strong>
+                ${escapeHtml(
+                  awayPercent
+                )}
+              </strong>
+
+            </div>
+
+
+          </div>
+
+        </div>
+
+
+        <!-- ADVICE -->
+
+        <div class="nf-advice">
+
+          <div class="nf-advice-title">
+            💡 ADVICE
+          </div>
+
+          <div class="nf-advice-value">
+            ${escapeHtml(
+              advice
+            )}
+          </div>
+
+        </div>
+
+
+        <!-- PREDICTED TEAM -->
+
+        <div class="nf-winner-line">
+
+          <span>
+            PREDIKSI PEMENANG
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              winnerName
+            )}
+          </strong>
+
+        </div>
+
+
+      </div>
+
+    `;
+
+
+    detail.classList.add(
+      "nf-prediction-open"
+    );
+
+
+    button.disabled =
+      false;
+
+
+    button.textContent =
+      "🔽 TUTUP PREDIKSI";
+
+  }
+
+
+  /* ==================================================
+     HANDICAP
+  ================================================== */
+
+  function buildHandicapPrediction(
+    prediction,
+    winner,
+    homeGoal,
+    awayGoal
+  ) {
+
+    /*
+     * API-Football prediction endpoint
+     * tidak memberikan satu nilai handicap
+     * sportsbook secara langsung.
+     *
+     * Karena itu jangan mengarang angka.
+     *
+     * Kita berikan arah handicap berdasarkan
+     * predicted winner.
+     */
+
+
+    if (
+      !winner ||
+      !winner.name
+    ) {
+
+      return "—";
+
+    }
+
+
+    if (
+      homeGoal === "—" ||
+      awayGoal === "—"
+    ) {
+
+      return "—";
+
+    }
+
+
+    var h =
+      parseFloat(
+        homeGoal
+      );
+
+
+    var a =
+      parseFloat(
+        awayGoal
+      );
+
+
+    if (
+      isNaN(h) ||
+      isNaN(a)
+    ) {
+
+      return "—";
+
+    }
+
+
+    if (h > a) {
+
+      return "HOME";
+
+    }
+
+
+    if (a > h) {
+
+      return "AWAY";
+
+    }
+
+
+    return "LEVEL";
+
+  }
+
+
+  /* ==================================================
+     CLEAN PREDICTION VALUE
+  ================================================== */
+
+  function cleanPredictionValue(
+    value
+  ) {
+
+    if (
+      value === undefined ||
+      value === null ||
+      value === ""
+    ) {
+
+      return "—";
+
+    }
+
+
+    return String(
+      value
+    );
+
+  }
+
+
+  /* ==================================================
+     FORMAT PERCENT
+  ================================================== */
+
+  function formatPercent(
+    value
+  ) {
+
+    if (
+      value === undefined ||
+      value === null ||
+      value === ""
+    ) {
+
+      return "—";
+
+    }
+
+
+    return String(
+      value
+    );
+
+  }
 
 
   /* ==================================================
@@ -1285,7 +1794,6 @@
     `;
 
   }
-
 
 
   /* ==================================================
@@ -1316,7 +1824,6 @@
     `;
 
   }
-
 
 
   /* ==================================================
@@ -1352,7 +1859,6 @@
     );
 
   }
-
 
 
   /* ==================================================
@@ -1393,7 +1899,6 @@
       );
 
   }
-
 
 
   function escapeAttr(
