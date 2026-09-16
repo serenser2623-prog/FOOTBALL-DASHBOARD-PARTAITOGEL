@@ -1029,8 +1029,6 @@
           </div>
 
 
-          <!-- DETAIL PREDICTION AKAN MUNCUL DI SINI -->
-
           <div
             class="nf-prediction-detail"
             id="prediction-detail-${fixture.id}"
@@ -1113,7 +1111,7 @@
 
 
     /* ==============================================
-       TOGGLE JIKA SUDAH TERBUKA
+       TOGGLE
     ============================================== */
 
     if (
@@ -1329,14 +1327,25 @@
       {};
 
 
+    /*
+     * API-Football biasanya mengirim
+     * predicted goals seperti:
+     *
+     * home: "1.5"
+     * away: "0.5"
+     *
+     * Kita ubah menjadi skor integer
+     * yang mudah dibaca.
+     */
+
     var homeGoal =
-      cleanPredictionValue(
+      convertPredictedGoal(
         goals.home
       );
 
 
     var awayGoal =
-      cleanPredictionValue(
+      convertPredictedGoal(
         goals.away
       );
 
@@ -1346,7 +1355,7 @@
       awayGoal !== "—"
 
         ? homeGoal +
-          " - " +
+          " : " +
           awayGoal
 
         : "—";
@@ -1354,17 +1363,23 @@
 
     var winnerName =
       winner.name ||
-      "No clear prediction";
+      "Tidak ada prediksi jelas";
 
+
+    /*
+     * NORMALISASI OVER / UNDER
+     */
 
     var underOver =
-      prediction.under_over ||
-      "—";
+      normalizeOverUnder(
+        prediction.under_over,
+        goals
+      );
 
 
     var advice =
       prediction.advice ||
-      "Analysis tersedia";
+      "Analisis tersedia";
 
 
     var homePercent =
@@ -1413,6 +1428,10 @@
         </div>
 
 
+        <!-- =======================================
+             PREDIKSI SKOR
+        ======================================== -->
+
         <div class="nf-score-label">
           PREDIKSI SKOR
         </div>
@@ -1430,7 +1449,9 @@
         <div class="nf-prediction-grid">
 
 
-          <!-- HANDICAP -->
+          <!-- =====================================
+               HANDICAP / ARAH HASIL
+          ====================================== -->
 
           <div class="nf-pick-card">
 
@@ -1445,13 +1466,15 @@
             </div>
 
             <div class="nf-pick-small">
-              Berdasarkan analisis
+              Arah berdasarkan prediksi skor
             </div>
 
           </div>
 
 
-          <!-- OVER UNDER -->
+          <!-- =====================================
+               OVER / UNDER
+          ====================================== -->
 
           <div class="nf-pick-card">
 
@@ -1472,7 +1495,9 @@
           </div>
 
 
-          <!-- 1X2 -->
+          <!-- =====================================
+               1X2
+          ====================================== -->
 
           <div class="nf-pick-card">
 
@@ -1493,7 +1518,9 @@
           </div>
 
 
-          <!-- SCORE -->
+          <!-- =====================================
+               SKOR AKURAT
+          ====================================== -->
 
           <div class="nf-pick-card">
 
@@ -1508,7 +1535,7 @@
             </div>
 
             <div class="nf-pick-small">
-              Top prediction
+              Prediksi skor
             </div>
 
           </div>
@@ -1517,7 +1544,9 @@
         </div>
 
 
-        <!-- PERCENTAGE -->
+        <!-- =======================================
+             PERCENTAGE
+        ======================================== -->
 
         <div class="nf-percent-section">
 
@@ -1579,7 +1608,9 @@
         </div>
 
 
-        <!-- ADVICE -->
+        <!-- =======================================
+             ADVICE
+        ======================================== -->
 
         <div class="nf-advice">
 
@@ -1596,7 +1627,9 @@
         </div>
 
 
-        <!-- PREDICTED TEAM -->
+        <!-- =======================================
+             PREDICTED TEAM
+        ======================================== -->
 
         <div class="nf-winner-line">
 
@@ -1634,7 +1667,564 @@
 
 
   /* ==================================================
-     HANDICAP
+     CONVERT PREDICTED GOAL
+  ================================================== */
+
+  function convertPredictedGoal(
+    value
+  ) {
+
+    if (
+      value === undefined ||
+      value === null ||
+      value === ""
+    ) {
+
+      return "—";
+
+    }
+
+
+    /*
+     * Bersihkan karakter aneh.
+     */
+
+    var text =
+      String(value)
+        .trim()
+        .replace(
+          ",",
+          "."
+        );
+
+
+    /*
+     * Ambil angka pertama.
+     */
+
+    var match =
+      text.match(
+        /-?\d+(?:\.\d+)?/
+      );
+
+
+    if (!match) {
+
+      return "—";
+
+    }
+
+
+    var number =
+      parseFloat(
+        match[0]
+      );
+
+
+    if (
+      isNaN(number)
+    ) {
+
+      return "—";
+
+    }
+
+
+    /*
+     * Gol tidak boleh negatif.
+     */
+
+    number =
+      Math.max(
+        0,
+        number
+      );
+
+
+    /*
+     * Batasi angka yang terlalu
+     * ekstrem agar tampilan tetap
+     * masuk akal.
+     */
+
+    number =
+      Math.min(
+        9,
+        number
+      );
+
+
+    /*
+     * Bulatkan predicted goals.
+     *
+     * Contoh:
+     *
+     * 1.5 -> 2
+     * 0.5 -> 1
+     * 1.2 -> 1
+     * 2.7 -> 3
+     */
+
+    return String(
+      Math.round(
+        number
+      )
+    );
+
+  }
+
+
+  /* ==================================================
+     NORMALIZE OVER / UNDER
+  ================================================== */
+
+  function normalizeOverUnder(
+    value,
+    goals
+  ) {
+
+    if (
+      value === undefined ||
+      value === null ||
+      value === ""
+    ) {
+
+      return "—";
+
+    }
+
+
+    var raw =
+      String(value)
+        .trim();
+
+
+    if (!raw) {
+
+      return "—";
+
+    }
+
+
+    var upper =
+      raw
+        .toUpperCase()
+        .replace(
+          ",",
+          "."
+        );
+
+
+    /*
+     * ==============================================
+     * FORMAT NORMAL
+     *
+     * OVER 2.5
+     * UNDER 2.5
+     * ==============================================
+     */
+
+    var normalMatch =
+      upper.match(
+        /\b(OVER|UNDER)\b\s*[-+]?\s*(\d+(?:\.\d+)?)/i
+      );
+
+
+    if (normalMatch) {
+
+      var direction =
+        normalMatch[1]
+          .toUpperCase();
+
+
+      var line =
+        parseFloat(
+          normalMatch[2]
+        );
+
+
+      if (
+        !isNaN(line)
+      ) {
+
+        return (
+          direction +
+          " " +
+          formatLine(
+            line
+          )
+        );
+
+      }
+
+    }
+
+
+    /*
+     * ==============================================
+     * FORMAT SEPERTI:
+     *
+     * -2.5 --2.5
+     * 2.5 - 2.5
+     * ==============================================
+     *
+     * Ambil line yang tersedia.
+     */
+
+    var numbers =
+      upper.match(
+        /\d+(?:\.\d+)?/g
+      );
+
+
+    if (
+      numbers &&
+      numbers.length
+    ) {
+
+      var possibleLines =
+        numbers
+          .map(
+            function (item) {
+
+              return parseFloat(
+                item
+              );
+
+            }
+          )
+          .filter(
+            function (item) {
+
+              return (
+                !isNaN(item) &&
+                item >= 0.5 &&
+                item <= 6.5
+              );
+
+            }
+          );
+
+
+      if (
+        possibleLines.length
+      ) {
+
+        /*
+         * Biasanya line yang sama
+         * muncul dua kali.
+         *
+         * Ambil nilai pertama.
+         */
+
+        var line =
+          possibleLines[0];
+
+
+        var projectedTotal =
+          getProjectedGoalTotal(
+            goals
+          );
+
+
+        if (
+          projectedTotal !== null
+        ) {
+
+          if (
+            projectedTotal >
+            line
+          ) {
+
+            return (
+              "OVER " +
+              formatLine(
+                line
+              )
+            );
+
+          }
+
+
+          if (
+            projectedTotal <
+            line
+          ) {
+
+            return (
+              "UNDER " +
+              formatLine(
+                line
+              )
+            );
+
+          }
+
+          /*
+           * Kalau tepat sama dengan line,
+           * jangan memaksakan arah.
+           */
+
+          return (
+            "LINE " +
+            formatLine(
+              line
+            )
+          );
+
+        }
+
+
+        return (
+          "LINE " +
+          formatLine(
+            line
+          )
+        );
+
+      }
+
+    }
+
+
+    /*
+     * ==============================================
+     * KALAU HANYA ADA "OVER"
+     * ==============================================
+     */
+
+    if (
+      upper.indexOf(
+        "OVER"
+      ) !== -1
+    ) {
+
+      var overNumber =
+        upper.match(
+          /\d+(?:\.\d+)?/
+        );
+
+
+      if (overNumber) {
+
+        return (
+          "OVER " +
+          formatLine(
+            parseFloat(
+              overNumber[0]
+            )
+          )
+        );
+
+      }
+
+    }
+
+
+    /*
+     * ==============================================
+     * KALAU HANYA ADA "UNDER"
+     * ==============================================
+     */
+
+    if (
+      upper.indexOf(
+        "UNDER"
+      ) !== -1
+    ) {
+
+      var underNumber =
+        upper.match(
+          /\d+(?:\.\d+)?/
+        );
+
+
+      if (underNumber) {
+
+        return (
+          "UNDER " +
+          formatLine(
+            parseFloat(
+              underNumber[0]
+            )
+          );
+
+      }
+
+    }
+
+
+    return "—";
+
+  }
+
+
+  /* ==================================================
+     PROJECTED TOTAL GOALS
+  ================================================== */
+
+  function getProjectedGoalTotal(
+    goals
+  ) {
+
+    if (
+      !goals
+    ) {
+
+      return null;
+
+    }
+
+
+    var home =
+      getNumericGoal(
+        goals.home
+      );
+
+
+    var away =
+      getNumericGoal(
+        goals.away
+      );
+
+
+    if (
+      home === null ||
+      away === null
+    ) {
+
+      return null;
+
+    }
+
+
+    return (
+      home +
+      away
+    );
+
+  }
+
+
+  /* ==================================================
+     NUMERIC GOAL
+  ================================================== */
+
+  function getNumericGoal(
+    value
+  ) {
+
+    if (
+      value === undefined ||
+      value === null ||
+      value === ""
+    ) {
+
+      return null;
+
+    }
+
+
+    var match =
+      String(value)
+        .replace(
+          ",",
+          "."
+        )
+        .match(
+          /-?\d+(?:\.\d+)?/
+        );
+
+
+    if (!match) {
+
+      return null;
+
+    }
+
+
+    var number =
+      parseFloat(
+        match[0]
+      );
+
+
+    if (
+      isNaN(number)
+    ) {
+
+      return null;
+
+    }
+
+
+    return Math.max(
+      0,
+      number
+    );
+
+  }
+
+
+  /* ==================================================
+     FORMAT LINE
+  ================================================== */
+
+  function formatLine(
+    value
+  ) {
+
+    if (
+      value === undefined ||
+      value === null ||
+      isNaN(value)
+    ) {
+
+      return "—";
+
+    }
+
+
+    var number =
+      parseFloat(
+        value
+      );
+
+
+    /*
+     * Line umum sepak bola:
+     *
+     * 0.5
+     * 1.5
+     * 2.5
+     * 3.5
+     * dst.
+     */
+
+    if (
+      Number.isInteger(
+        number
+      )
+    ) {
+
+      return (
+        number.toFixed(
+          1
+        )
+      );
+
+    }
+
+
+    return String(
+      number
+    );
+
+  }
+
+
+  /* ==================================================
+     HANDICAP / ARAH HASIL
   ================================================== */
 
   function buildHandicapPrediction(
@@ -1646,24 +2236,12 @@
 
     /*
      * API-Football prediction endpoint
-     * tidak memberikan satu nilai handicap
-     * sportsbook secara langsung.
+     * tidak memberikan sportsbook handicap
+     * secara langsung.
      *
-     * Karena itu jangan mengarang angka.
-     *
-     * Kita berikan arah handicap berdasarkan
-     * predicted winner.
+     * Jadi kita tidak mengarang
+     * angka handicap.
      */
-
-
-    if (
-      !winner ||
-      !winner.name
-    ) {
-
-      return "—";
-
-    }
 
 
     if (
@@ -1677,14 +2255,16 @@
 
 
     var h =
-      parseFloat(
-        homeGoal
+      parseInt(
+        homeGoal,
+        10
       );
 
 
     var a =
-      parseFloat(
-        awayGoal
+      parseInt(
+        awayGoal,
+        10
       );
 
 
@@ -1698,14 +2278,18 @@
     }
 
 
-    if (h > a) {
+    if (
+      h > a
+    ) {
 
       return "HOME";
 
     }
 
 
-    if (a > h) {
+    if (
+      a > h
+    ) {
 
       return "AWAY";
 
@@ -1762,9 +2346,47 @@
     }
 
 
-    return String(
-      value
-    );
+    var text =
+      String(
+        value
+      ).trim();
+
+
+    /*
+     * API biasanya sudah
+     * mengirim "45%" atau "45".
+     */
+
+    if (
+      text.indexOf(
+        "%"
+      ) !== -1
+    ) {
+
+      return text;
+
+    }
+
+
+    var number =
+      parseFloat(
+        text
+      );
+
+
+    if (
+      !isNaN(number)
+    ) {
+
+      return (
+        number +
+        "%"
+      );
+
+    }
+
+
+    return text;
 
   }
 
