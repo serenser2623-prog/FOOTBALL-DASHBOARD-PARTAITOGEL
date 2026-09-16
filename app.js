@@ -1,1404 +1,807 @@
 (function () {
-
   "use strict";
 
-
-  /* ==================================================
+  /* =========================================================
      CONFIG
-  ================================================== */
+  ========================================================= */
 
   var API_URL =
     "https://script.google.com/macros/s/AKfycbzXgqgcL8FcsxbDS8DSvi02StALKKzziSEU2RNs1izfy_HPHZbXIBWx2ZEuH0lFOaHa/exec";
 
-
-  var APP =
-    document.getElementById(
-      "nyuk-football-app"
-    );
-
+  var APP = document.getElementById("nyuk-football-app");
 
   if (!APP) {
+    console.error("Element #nyuk-football-app tidak ditemukan.");
     return;
   }
 
-
   var fixtures = [];
-
-  var leagues = {};
-
-  var currentDate = getToday();
-
+  var leagues = [];
+  var currentDate = new Date();
   var requestCounter = 0;
-
   var predictionCache = {};
 
-
-  /* ==================================================
+  /* =========================================================
      INIT
-  ================================================== */
+  ========================================================= */
 
   renderLoading();
+  loadFixtures(currentDate);
 
-  loadFixtures(
-    currentDate
-  );
+  /* =========================================================
+     JSONP
+  ========================================================= */
 
-
-  /* ==================================================
-     DATE
-  ================================================== */
-
-  function getToday() {
-
-    var d =
-      new Date();
-
-
-    var year =
-      d.getFullYear();
-
-
-    var month =
-      String(
-        d.getMonth() + 1
-      ).padStart(
-        2,
-        "0"
-      );
-
-
-    var day =
-      String(
-        d.getDate()
-      ).padStart(
-        2,
-        "0"
-      );
-
-
-    return (
-      year +
-      "-" +
-      month +
-      "-" +
-      day
-    );
-
-  }
-
-
-  /* ==================================================
-     JSONP REQUEST
-  ================================================== */
-
-  function jsonp(
-    params,
-    callback
-  ) {
-
+  function jsonp(params, callback) {
     var callbackName =
       "nyukFootballCallback_" +
       Date.now() +
       "_" +
-      Math.floor(
-        Math.random() * 999999
-      );
+      Math.floor(Math.random() * 100000);
 
-
-    window[
-      callbackName
-    ] = function (data) {
-
-      try {
-
-        callback(
-          null,
-          data
-        );
-
-      } finally {
-
-        cleanup();
-
-      }
-
-    };
-
-
-    var script =
-      document.createElement(
-        "script"
-      );
-
+    var script = document.createElement("script");
 
     var query = [];
 
-
-    Object.keys(
-      params
-    ).forEach(
-      function (key) {
-
-        query.push(
-
-          encodeURIComponent(
-            key
-          ) +
-
+    Object.keys(params).forEach(function (key) {
+      query.push(
+        encodeURIComponent(key) +
           "=" +
-
-          encodeURIComponent(
-            params[key]
-          )
-
-        );
-
-      }
-    );
-
-
-    query.push(
-
-      "callback=" +
-
-      encodeURIComponent(
-        callbackName
-      )
-
-    );
-
-
-    script.src =
-      API_URL +
-      "?" +
-      query.join("&");
-
-
-    script.async =
-      true;
-
-
-    var timeout =
-      setTimeout(
-        function () {
-
-          cleanup();
-
-          callback(
-            new Error(
-              "Request API timeout."
-            )
-          );
-
-        },
-        30000
+          encodeURIComponent(params[key])
       );
+    });
 
+    query.push("callback=" + encodeURIComponent(callbackName));
 
-    script.onerror =
-      function () {
+    var finished = false;
 
-        clearTimeout(
-          timeout
-        );
+    window[callbackName] = function (data) {
+      if (finished) return;
 
-        cleanup();
+      finished = true;
 
-        callback(
-          new Error(
-            "Gagal menghubungkan ke API."
-          )
-        );
+      cleanup();
 
-      };
-
+      callback(null, data);
+    };
 
     function cleanup() {
-
-      clearTimeout(
-        timeout
-      );
-
-
-      if (
-        script.parentNode
-      ) {
-
-        script.parentNode
-          .removeChild(
-            script
-          );
-
-      }
-
+      try {
+        if (script && script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      } catch (e) {}
 
       try {
-
-        delete window[
-          callbackName
-        ];
-
+        delete window[callbackName];
       } catch (e) {
-
-        window[
-          callbackName
-        ] = undefined;
-
+        window[callbackName] = undefined;
       }
-
     }
 
+    script.onerror = function () {
+      if (finished) return;
 
-    document.body.appendChild(
-      script
-    );
+      finished = true;
 
+      cleanup();
+
+      callback(new Error("Gagal menghubungi server API."));
+    };
+
+    script.src = API_URL + "?" + query.join("&");
+
+    document.body.appendChild(script);
+
+    /* timeout */
+    setTimeout(function () {
+      if (finished) return;
+
+      finished = true;
+
+      cleanup();
+
+      callback(
+        new Error(
+          "Request timeout. Server tidak memberikan respons."
+        )
+      );
+    }, 30000);
   }
 
-
-  /* ==================================================
+  /* =========================================================
      LOAD FIXTURES
-  ================================================== */
+  ========================================================= */
 
-  function loadFixtures(
-    date
-  ) {
-
-    var requestId =
-      ++requestCounter;
-
-
-    currentDate =
-      date;
-
+  function loadFixtures(date) {
+    var requestId = ++requestCounter;
 
     renderLoading();
 
+    var dateString = formatDate(date);
 
     jsonp(
-
       {
-
-        endpoint:
-          "fixtures",
-
-        date:
-          date,
-
-        timezone:
-          "Asia/Jakarta"
-
+        endpoint: "fixtures",
+        date: dateString,
+        timezone: "Asia/Jakarta"
       },
-
-      function (
-        error,
-        result
-      ) {
-
-        if (
-          requestId !==
-          requestCounter
-        ) {
-
-          return;
-
-        }
-
+      function (error, result) {
+        if (requestId !== requestCounter) return;
 
         if (error) {
+          console.error(error);
 
           renderError(
-            error.message
+            "Gagal memuat pertandingan.<br>" +
+              escapeHtml(error.message || "Unknown error")
           );
 
           return;
-
         }
 
-
-        if (
-          !result ||
-          !result.success
-        ) {
-
+        if (!result || !result.success) {
           renderError(
-
-            result &&
-            result.error
-
-              ? result.error
-
-              : "API mengembalikan error."
-
+            (result && result.message) ||
+              "Data pertandingan tidak tersedia."
           );
 
           return;
-
         }
-
 
         var response =
           result.data &&
-          result.data.response
+          Array.isArray(result.data.response)
             ? result.data.response
             : [];
 
-
-        fixtures =
-          response;
-
+        fixtures = response;
 
         buildLeagueList();
-
-
         renderDashboard();
-
       }
-
     );
-
   }
 
-
-  /* ==================================================
-     BUILD LEAGUES
-  ================================================== */
+  /* =========================================================
+     BUILD LEAGUE LIST
+  ========================================================= */
 
   function buildLeagueList() {
+    var map = {};
 
-    leagues = {};
+    fixtures.forEach(function (match) {
+      var league =
+        match &&
+        match.league
+          ? match.league
+          : {};
 
+      var id = league.id;
 
-    fixtures.forEach(
-      function (match) {
+      if (!id) return;
 
-        var league =
-          match.league || {};
-
-
-        if (
-          league.id ===
-          undefined
-        ) {
-
-          return;
-
-        }
-
-
-        var key =
-          String(
-            league.id
-          );
-
-
-        if (
-          !leagues[key]
-        ) {
-
-          leagues[key] = {
-
-            id:
-              league.id,
-
-            name:
-              league.name ||
-              "Unknown League",
-
-            country:
-              league.country ||
-              "",
-
-            logo:
-              league.logo ||
-              ""
-
-          };
-
-        }
-
+      if (!map[id]) {
+        map[id] = {
+          id: id,
+          name: league.name || "Unknown League",
+          logo: league.logo || ""
+        };
       }
-    );
+    });
 
+    leagues = Object.keys(map).map(function (key) {
+      return map[key];
+    });
+
+    leagues.sort(function (a, b) {
+      return a.name.localeCompare(b.name);
+    });
   }
 
-
-  /* ==================================================
-     RENDER DASHBOARD
-  ================================================== */
+  /* =========================================================
+     DASHBOARD
+  ========================================================= */
 
   function renderDashboard() {
+    APP.innerHTML =
+      '<div class="nyuk-football-header">' +
+        '<div>' +
+          '<h1>FOOTBALL PREDIKSI PARTAITOGEL</h1>' +
+          '<div class="nyuk-football-subtitle">' +
+            'Prediksi pertandingan sepak bola' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
 
-    APP.innerHTML = `
+      '<div class="nyuk-football-filters">' +
 
-      <section class="nf-header nf-glass">
+        '<div class="nyuk-filter-group">' +
+          '<label>TANGGAL</label>' +
+          '<input ' +
+            'type="date" ' +
+            'id="nyuk-date-filter" ' +
+            'value="' + formatDate(currentDate) + '"' +
+          '>' +
+        '</div>' +
 
-        <div class="nf-brand">
+        '<div class="nyuk-filter-group">' +
+          '<label>LEAGUE</label>' +
+          '<select id="nyuk-league-filter">' +
+            '<option value="">SEMUA LEAGUE</option>' +
+            leagues.map(function (league) {
+              return (
+                '<option value="' +
+                escapeAttr(String(league.id)) +
+                '">' +
+                escapeHtml(league.name) +
+                '</option>'
+              );
+            }).join("") +
+          '</select>' +
+        '</div>' +
 
-          <h1 class="nf-title">
-            FOOTBALL PREDIKSI PARTAITOGEL
-          </h1>
+        '<div class="nyuk-filter-group">' +
+          '<label>CARI TEAM</label>' +
+          '<input ' +
+            'type="text" ' +
+            'id="nyuk-search-filter" ' +
+            'placeholder="Cari nama team..."' +
+          '>' +
+        '</div>' +
 
-          <div class="nf-subtitle">
-            Live Fixtures • Daily Matches • Match Predictions
-          </div>
+        '<button id="nyuk-refresh-btn" type="button">' +
+          '🔄 REFRESH' +
+        '</button>' +
 
-          <div class="nf-status">
+      '</div>' +
 
-            <span class="nf-status-dot"></span>
+      '<div id="nyuk-summary"></div>' +
 
-            API ONLINE
+      '<div id="nyuk-matches" class="nyuk-matches-grid"></div>';
 
-          </div>
+    var dateFilter =
+      document.getElementById("nyuk-date-filter");
 
-        </div>
+    var leagueFilter =
+      document.getElementById("nyuk-league-filter");
 
-      </section>
+    var searchFilter =
+      document.getElementById("nyuk-search-filter");
 
+    var refreshButton =
+      document.getElementById("nyuk-refresh-btn");
 
-      <section class="nf-filter nf-glass">
+    if (dateFilter) {
+      dateFilter.addEventListener("change", function () {
+        var value = this.value;
 
-        <input
-          id="nf-date"
-          class="nf-input"
-          type="date"
-          value="${currentDate}"
-        >
+        if (!value) return;
 
+        var parts = value.split("-");
 
-        <select
-          id="nf-league"
-          class="nf-select"
-        >
+        currentDate = new Date(
+          Number(parts[0]),
+          Number(parts[1]) - 1,
+          Number(parts[2])
+        );
 
-          <option value="">
-            Semua Liga
-          </option>
+        loadFixtures(currentDate);
+      });
+    }
 
-          ${renderLeagueOptions()}
+    if (leagueFilter) {
+      leagueFilter.addEventListener(
+        "change",
+        updateMatches
+      );
+    }
 
-        </select>
+    if (searchFilter) {
+      searchFilter.addEventListener(
+        "input",
+        updateMatches
+      );
+    }
 
-
-        <input
-          id="nf-search"
-          class="nf-input nf-search"
-          type="search"
-          placeholder="Cari nama klub..."
-        >
-
-
-        <button
-          id="nf-refresh"
-          class="nf-button"
-          type="button"
-        >
-          ↻ REFRESH
-        </button>
-
-      </section>
-
-
-      <section class="nf-summary">
-
-        <div
-          id="nf-date-title"
-          class="nf-date-title"
-        ></div>
-
-        <div
-          id="nf-count"
-          class="nf-count"
-        ></div>
-
-      </section>
-
-
-      <section
-        id="nf-grid"
-        class="nf-grid"
-      ></section>
-
-    `;
-
-
-    bindEvents();
+    if (refreshButton) {
+      refreshButton.addEventListener(
+        "click",
+        function () {
+          loadFixtures(currentDate);
+        }
+      );
+    }
 
     updateMatches();
-
   }
 
-
-  /* ==================================================
-     LEAGUE OPTIONS
-  ================================================== */
-
-  function renderLeagueOptions() {
-
-    return Object.keys(
-      leagues
-    )
-      .sort(
-        function (a, b) {
-
-          return leagues[a].name
-            .localeCompare(
-              leagues[b].name
-            );
-
-        }
-      )
-      .map(
-        function (key) {
-
-          var league =
-            leagues[key];
-
-
-          return `
-
-            <option
-              value="${escapeAttr(
-                String(
-                  league.id
-                )
-              )}"
-            >
-
-              ${escapeHtml(
-                league.name
-              )}
-
-              ${
-                league.country
-                  ? " — " +
-                    escapeHtml(
-                      league.country
-                    )
-                  : ""
-              }
-
-            </option>
-
-          `;
-
-        }
-      )
-      .join("");
-
-  }
-
-
-  /* ==================================================
-     EVENTS
-  ================================================== */
-
-  function bindEvents() {
-
-    var date =
-      document.getElementById(
-        "nf-date"
-      );
-
-
-    var league =
-      document.getElementById(
-        "nf-league"
-      );
-
-
-    var search =
-      document.getElementById(
-        "nf-search"
-      );
-
-
-    var refresh =
-      document.getElementById(
-        "nf-refresh"
-      );
-
-
-    date.addEventListener(
-      "change",
-      function () {
-
-        loadFixtures(
-          date.value
-        );
-
-      }
-    );
-
-
-    league.addEventListener(
-      "change",
-      updateMatches
-    );
-
-
-    search.addEventListener(
-      "input",
-      updateMatches
-    );
-
-
-    refresh.addEventListener(
-      "click",
-      function () {
-
-        loadFixtures(
-          currentDate
-        );
-
-      }
-    );
-
-  }
-
-
-  /* ==================================================
-     FILTER
-  ================================================== */
+  /* =========================================================
+     UPDATE MATCHES
+  ========================================================= */
 
   function updateMatches() {
+    var container =
+      document.getElementById("nyuk-matches");
 
-    var grid =
+    if (!container) return;
+
+    var leagueValue =
       document.getElementById(
-        "nf-grid"
+        "nyuk-league-filter"
       );
 
-
-    if (!grid) {
-      return;
-    }
-
-
-    var league =
+    var searchValue =
       document.getElementById(
-        "nf-league"
-      ).value;
+        "nyuk-search-filter"
+      );
 
+    var leagueId =
+      leagueValue ? leagueValue.value : "";
 
     var search =
-      document.getElementById(
-        "nf-search"
-      ).value
-        .trim()
-        .toLowerCase();
+      searchValue
+        ? searchValue.value.trim().toLowerCase()
+        : "";
 
+    var filtered = fixtures.filter(function (match) {
+      var league =
+        match && match.league
+          ? match.league
+          : {};
 
-    var filtered =
-      fixtures.filter(
-        function (match) {
+      var teams =
+        match && match.teams
+          ? match.teams
+          : {};
 
-          var leagueId =
-            String(
-              match.league &&
-              match.league.id
-            );
+      var home =
+        teams.home && teams.home.name
+          ? teams.home.name
+          : "";
 
+      var away =
+        teams.away && teams.away.name
+          ? teams.away.name
+          : "";
 
-          var home =
-            (
-              match.teams &&
-              match.teams.home &&
-              match.teams.home.name
-            ) || "";
+      if (
+        leagueId &&
+        String(league.id) !== String(leagueId)
+      ) {
+        return false;
+      }
 
+      if (search) {
+        var text =
+          (home + " " + away + " " +
+            (league.name || "")).toLowerCase();
 
-          var away =
-            (
-              match.teams &&
-              match.teams.away &&
-              match.teams.away.name
-            ) || "";
-
-
-          var text =
-            (
-              home +
-              " " +
-              away
-            ).toLowerCase();
-
-
-          var leagueOK =
-            !league ||
-            leagueId ===
-              league;
-
-
-          var searchOK =
-            !search ||
-            text.includes(
-              search
-            );
-
-
-          return (
-            leagueOK &&
-            searchOK
-          );
-
+        if (text.indexOf(search) === -1) {
+          return false;
         }
-      );
+      }
 
+      return true;
+    });
 
-    document.getElementById(
-      "nf-count"
-    ).textContent =
-      filtered.length +
-      " pertandingan";
+    var summary =
+      document.getElementById("nyuk-summary");
 
-
-    document.getElementById(
-      "nf-date-title"
-    ).textContent =
-      formatDate(
-        currentDate
-      );
-
-
-    if (
-      !filtered.length
-    ) {
-
-      grid.innerHTML = `
-
-        <div class="nf-message nf-glass">
-
-          <div class="nf-message-title">
-            Tidak ada pertandingan
-          </div>
-
-          <div class="nf-message-text">
-            Coba ganti tanggal, liga, atau kata pencarian.
-          </div>
-
-        </div>
-
-      `;
-
-      return;
-
+    if (summary) {
+      summary.innerHTML =
+        "<strong>" +
+        filtered.length +
+        "</strong> pertandingan ditemukan";
     }
 
+    if (!filtered.length) {
+      container.innerHTML =
+        '<div class="nyuk-empty">' +
+          "Tidak ada pertandingan." +
+        "</div>";
 
-    grid.innerHTML =
-      filtered
-        .map(
-          renderMatch
-        )
-        .join("");
+      return;
+    }
 
+    container.innerHTML = filtered
+      .map(renderMatch)
+      .join("");
+
+    bindPredictionButtons();
   }
 
+  /* =========================================================
+     RENDER MATCH
+  ========================================================= */
 
-  /* ==================================================
-     MATCH CARD
-  ================================================== */
-
-  function renderMatch(
-    match
-  ) {
-
+  function renderMatch(match) {
     var fixture =
-      match.fixture || {};
-
+      match && match.fixture
+        ? match.fixture
+        : {};
 
     var league =
-      match.league || {};
-
+      match && match.league
+        ? match.league
+        : {};
 
     var teams =
-      match.teams || {};
-
+      match && match.teams
+        ? match.teams
+        : {};
 
     var home =
       teams.home || {};
 
-
     var away =
       teams.away || {};
 
+    var fixtureId =
+      fixture.id || "";
 
-    var status =
-      fixture.status || {};
-
-
-    var date =
+    var dateTime =
       fixture.date
-        ? new Date(
-            fixture.date
-          )
+        ? new Date(fixture.date)
         : null;
 
-
-    var hour =
-      date
-        ? date.toLocaleTimeString(
+    var time =
+      dateTime
+        ? dateTime.toLocaleTimeString(
             "id-ID",
             {
-              hour:
-                "2-digit",
-
-              minute:
-                "2-digit",
-
-              hour12:
-                false,
-
-              timeZone:
-                "Asia/Jakarta"
+              hour: "2-digit",
+              minute: "2-digit"
             }
           )
         : "--:--";
 
-
-    var statusText =
-      status.long ||
-      "Not Started";
-
-
-    var predictionButton =
-      fixture.id
-        ? `
-
-          <button
-            class="nf-prediction-button nf-button"
-            data-fixture="${fixture.id}"
-            type="button"
-          >
-            🔮 LIHAT PREDIKSI
-          </button>
-
-        `
+    var status =
+      fixture.status &&
+      fixture.status.short
+        ? fixture.status.short
         : "";
 
+    return (
+      '<div class="nyuk-match-card" data-fixture="' +
+        escapeAttr(String(fixtureId)) +
+      '">' +
 
-    return `
+        '<div class="nyuk-match-league">' +
 
-      <article
-        class="nf-match nf-glass"
-        data-fixture-card="${fixture.id || ""}"
-      >
-
-        <div class="nf-league">
-
-          ${
+          (
             league.logo
-              ? `
-                <img
-                  src="${escapeAttr(
-                    league.logo
-                  )}"
-                  alt=""
-                  loading="lazy"
-                >
-              `
+              ? '<img src="' +
+                escapeAttr(league.logo) +
+                '" alt="">'
               : ""
-          }
+          ) +
 
-          <div>
+          '<span>' +
+            escapeHtml(
+              league.name || "Unknown League"
+            ) +
+          '</span>' +
 
-            <div class="nf-league-name">
-              ${escapeHtml(
-                league.name ||
-                "Unknown League"
-              )}
-            </div>
+        '</div>' +
 
-            <div class="nf-country">
-              ${escapeHtml(
-                league.country ||
-                ""
-              )}
-            </div>
+        '<div class="nyuk-match-time">' +
+          '<strong>' +
+            escapeHtml(time) +
+          '</strong>' +
 
-          </div>
+          (
+            status
+              ? '<span>' +
+                  escapeHtml(status) +
+                '</span>'
+              : ""
+          ) +
 
-        </div>
+        '</div>' +
 
+        '<div class="nyuk-teams">' +
 
-        <div class="nf-time">
+          '<div class="nyuk-team">' +
 
-          <div class="nf-hour">
-            ${hour}
-          </div>
-
-          <div class="nf-status-text">
-            ${escapeHtml(
-              statusText
-            )}
-          </div>
-
-        </div>
-
-
-        <div class="nf-teams">
-
-          <div class="nf-team">
-
-            ${
+            (
               home.logo
-                ? `
-                  <img
-                    src="${escapeAttr(
-                      home.logo
-                    )}"
-                    alt=""
-                    loading="lazy"
-                  >
-                `
+                ? '<img src="' +
+                  escapeAttr(home.logo) +
+                  '" alt="">'
                 : ""
-            }
+            ) +
 
-            <div class="nf-team-name">
-              ${escapeHtml(
-                home.name ||
-                "Home"
-              )}
-            </div>
+            '<span>' +
+              escapeHtml(
+                home.name || "Home"
+              ) +
+            '</span>' +
 
-          </div>
+          '</div>' +
 
+          '<div class="nyuk-vs">VS</div>' +
 
-          <div class="nf-vs">
-            VS
-          </div>
+          '<div class="nyuk-team">' +
 
-
-          <div class="nf-team nf-team-away">
-
-            ${
+            (
               away.logo
-                ? `
-                  <img
-                    src="${escapeAttr(
-                      away.logo
-                    )}"
-                    alt=""
-                    loading="lazy"
-                  >
-                `
+                ? '<img src="' +
+                  escapeAttr(away.logo) +
+                  '" alt="">'
                 : ""
-            }
+            ) +
 
-            <div class="nf-team-name">
-              ${escapeHtml(
-                away.name ||
-                "Away"
-              )}
-            </div>
+            '<span>' +
+              escapeHtml(
+                away.name || "Away"
+              ) +
+            '</span>' +
 
-          </div>
+          '</div>' +
 
-        </div>
+        '</div>' +
 
+        '<div class="nyuk-prediction-area">' +
 
-        <div
-          class="nf-prediction"
-          id="prediction-${fixture.id}"
-        >
+          '<button ' +
+            'type="button" ' +
+            'class="nyuk-prediction-btn" ' +
+            'data-fixture="' +
+              escapeAttr(String(fixtureId)) +
+            '">' +
+            '🔮 LIHAT PREDIKSI' +
+          '</button>' +
 
-          <div class="nf-prediction-title">
+          '<div ' +
+            'class="nyuk-prediction-detail" ' +
+            'id="nyuk-prediction-' +
+              escapeAttr(String(fixtureId)) +
+            '">' +
+          '</div>' +
 
-            <span>
-              MATCH ANALYSIS
-            </span>
+        '</div>' +
 
-            <span>
-              #${fixture.id || ""}
-            </span>
-
-          </div>
-
-
-          <div class="nf-prediction-main">
-
-            <div class="nf-prediction-value">
-              Belum dimuat
-            </div>
-
-
-            ${
-              predictionButton
-            }
-
-          </div>
-
-
-          <div
-            class="nf-prediction-detail"
-            id="prediction-detail-${fixture.id}"
-          ></div>
-
-        </div>
-
-      </article>
-
-    `;
-
+      '</div>'
+    );
   }
 
-
-  /* ==================================================
+  /* =========================================================
      PREDICTION BUTTON
-  ================================================== */
+  ========================================================= */
 
-  document.addEventListener(
-    "click",
-    function (event) {
-
-      var button =
-        event.target.closest(
-          ".nf-prediction-button"
-        );
-
-
-      if (!button) {
-        return;
-      }
-
-
-      var fixture =
-        button.getAttribute(
-          "data-fixture"
-        );
-
-
-      loadPrediction(
-        fixture,
-        button
+  function bindPredictionButtons() {
+    var buttons =
+      APP.querySelectorAll(
+        ".nyuk-prediction-btn"
       );
 
-    }
-  );
+    Array.prototype.forEach.call(
+      buttons,
+      function (button) {
+        button.addEventListener(
+          "click",
+          function () {
+            var fixtureId =
+              this.getAttribute(
+                "data-fixture"
+              );
 
+            if (!fixtureId) return;
 
-  /* ==================================================
+            loadPrediction(
+              fixtureId,
+              this
+            );
+          }
+        );
+      }
+    );
+  }
+
+  /* =========================================================
      LOAD PREDICTION
-  ================================================== */
+  ========================================================= */
 
   function loadPrediction(
-    fixture,
+    fixtureId,
     button
   ) {
-
-    var card =
-      document.getElementById(
-        "prediction-" +
-        fixture
-      );
-
-
-    if (!card) {
-      return;
-    }
-
-
     var detail =
       document.getElementById(
-        "prediction-detail-" +
-        fixture
+        "nyuk-prediction-" +
+        fixtureId
       );
 
-
-    if (!detail) {
-      return;
-    }
-
-
-    /* ==============================================
-       TOGGLE
-    ============================================== */
+    if (!detail) return;
 
     if (
       detail.classList.contains(
-        "nf-prediction-open"
+        "is-open"
       )
     ) {
-
       detail.classList.remove(
-        "nf-prediction-open"
+        "is-open"
       );
+
+      detail.innerHTML = "";
 
       button.textContent =
         "🔮 LIHAT PREDIKSI";
 
       return;
-
     }
 
-
-    /* ==============================================
-       CACHE
-    ============================================== */
-
-    if (
-      predictionCache[fixture]
-    ) {
-
-      renderPrediction(
-        fixture,
-        predictionCache[fixture],
-        button
-      );
-
-      return;
-
-    }
-
-
-    button.disabled =
-      true;
-
+    detail.classList.add("is-open");
 
     button.textContent =
-      "⏳ MENGAMBIL PREDIKSI...";
+      "⏳ MEMUAT PREDIKSI...";
 
+    if (
+      predictionCache[fixtureId]
+    ) {
+      renderPrediction(
+        detail,
+        predictionCache[fixtureId]
+      );
 
-    detail.innerHTML = `
+      button.textContent =
+        "🔽 TUTUP PREDIKSI";
 
-      <div class="nf-prediction-loading">
+      return;
+    }
 
-        <div class="nf-mini-loader"></div>
-
-        <div>
-          Mengambil analisis pertandingan...
-        </div>
-
-      </div>
-
-    `;
-
-
-    detail.classList.add(
-      "nf-prediction-open"
-    );
-
+    detail.innerHTML =
+      '<div class="nyuk-prediction-loading">' +
+        "⏳ Mengambil analisa..." +
+      "</div>";
 
     jsonp(
-
       {
-
-        endpoint:
-          "predictions",
-
-        fixture:
-          fixture
-
+        endpoint: "predictions",
+        fixture: fixtureId
       },
-
-      function (
-        error,
-        result
-      ) {
-
-        button.disabled =
-          false;
-
-
+      function (error, result) {
         if (error) {
-
-          detail.innerHTML = `
-
-            <div class="nf-prediction-error">
-              ⚠️ Gagal mengambil prediksi.
-              <br>
-              ${escapeHtml(
-                error.message
-              )}
-            </div>
-
-          `;
+          detail.innerHTML =
+            '<div class="nyuk-prediction-error">' +
+              escapeHtml(
+                error.message ||
+                "Gagal mengambil prediksi."
+              ) +
+            "</div>";
 
           button.textContent =
-            "🔄 COBA LAGI";
+            "🔮 COBA LAGI";
 
           return;
-
         }
-
 
         if (
           !result ||
           !result.success
         ) {
-
-          detail.innerHTML = `
-
-            <div class="nf-prediction-error">
-              ⚠️ Data prediksi tidak tersedia.
-            </div>
-
-          `;
+          detail.innerHTML =
+            '<div class="nyuk-prediction-error">' +
+              escapeHtml(
+                (
+                  result &&
+                  result.message
+                ) ||
+                "Prediksi tidak tersedia."
+              ) +
+            "</div>";
 
           button.textContent =
-            "🔄 COBA LAGI";
+            "🔮 COBA LAGI";
 
           return;
-
         }
 
-
-        var data =
+        var response =
           result.data &&
-          result.data.response
-            ? result.data.response[0]
-            : null;
+          Array.isArray(
+            result.data.response
+          )
+            ? result.data.response
+            : [];
 
-
-        if (!data) {
-
-          detail.innerHTML = `
-
-            <div class="nf-prediction-error">
-              ⚠️ Belum ada prediksi untuk pertandingan ini.
-            </div>
-
-          `;
+        if (!response.length) {
+          detail.innerHTML =
+            '<div class="nyuk-prediction-error">' +
+              "Prediksi untuk pertandingan ini belum tersedia." +
+            "</div>";
 
           button.textContent =
-            "🔮 LIHAT PREDIKSI";
+            "🔮 COBA LAGI";
 
           return;
-
         }
 
+        var prediction =
+          response[0];
 
-        predictionCache[fixture] =
-          data;
-
+        predictionCache[
+          fixtureId
+        ] = prediction;
 
         renderPrediction(
-          fixture,
-          data,
-          button
+          detail,
+          prediction
         );
 
+        button.textContent =
+          "🔽 TUTUP PREDIKSI";
       }
-
     );
-
   }
 
-
-  /* ==================================================
-     RENDER PREDICTION DETAIL
-  ================================================== */
+  /* =========================================================
+     RENDER PREDICTION
+  ========================================================= */
 
   function renderPrediction(
-    fixture,
-    data,
-    button
+    detail,
+    data
   ) {
-
-    var detail =
-      document.getElementById(
-        "prediction-detail-" +
-        fixture
-      );
-
-
-    if (!detail) {
-      return;
-    }
-
-
     var prediction =
-      data.predictions ||
-      {};
-
+      data.predictions || {};
 
     var winner =
-      prediction.winner ||
-      {};
-
+      prediction.winner || {};
 
     var percent =
-      prediction.percent ||
-      {};
-
+      prediction.percent || {};
 
     var goals =
-      prediction.goals ||
-      {};
-
+      prediction.goals || {};
 
     /*
-     * API-Football biasanya mengirim
-     * predicted goals seperti:
+     * API-FOOTBALL dapat mengirim nilai seperti:
      *
-     * home: "1.5"
-     * away: "0.5"
+     * home = "-2.5"
+     * away = "-1.5"
      *
-     * Kita ubah menjadi skor integer
-     * yang mudah dibaca.
+     * Itu BUKAN berarti -2.5 dan -1.5 gol.
+     *
+     * Untuk tampilan dashboard kita konversi:
+     *
+     * -2.5 -> 2
+     * -1.5 -> 1
+     *
+     * sehingga menjadi:
+     *
+     * 2 : 1
      */
 
     var homeGoal =
-      convertPredictedGoal(
+      normalizePredictionGoal(
         goals.home
       );
 
-
     var awayGoal =
-      convertPredictedGoal(
+      normalizePredictionGoal(
         goals.away
       );
-
 
     var score =
       homeGoal !== "—" &&
       awayGoal !== "—"
-
-        ? homeGoal +
-          " : " +
-          awayGoal
-
+        ? homeGoal + " : " + awayGoal
         : "—";
-
 
     var winnerName =
       winner.name ||
-      "Tidak ada prediksi jelas";
-
-
-    /*
-     * NORMALISASI OVER / UNDER
-     */
+      "No clear prediction";
 
     var underOver =
-      normalizeOverUnder(
-        prediction.under_over,
-        goals
+      normalizeUnderOver(
+        prediction.under_over
       );
-
 
     var advice =
       prediction.advice ||
-      "Analisis tersedia";
-
-
-    var homePercent =
-      formatPercent(
-        percent.home
-      );
-
-
-    var drawPercent =
-      formatPercent(
-        percent.draw
-      );
-
-
-    var awayPercent =
-      formatPercent(
-        percent.away
-      );
-
+      "Analisa tersedia";
 
     var handicap =
       buildHandicapPrediction(
@@ -1408,824 +811,272 @@
         awayGoal
       );
 
-
-    detail.innerHTML = `
-
-      <div class="nf-prediction-box">
-
-        <div class="nf-prediction-box-header">
-
-          <div>
-            🔮 MATCH PREDICTION
-          </div>
-
-          <div>
-            #${escapeHtml(
-              String(fixture)
-            )}
-          </div>
-
-        </div>
-
-
-        <!-- =======================================
-             PREDIKSI SKOR
-        ======================================== -->
-
-        <div class="nf-score-label">
-          PREDIKSI SKOR
-        </div>
-
-
-        <div class="nf-predicted-score">
-
-          ${escapeHtml(
-            score
-          )}
-
-        </div>
-
-
-        <div class="nf-prediction-grid">
-
-
-          <!-- =====================================
-               HANDICAP / ARAH HASIL
-          ====================================== -->
-
-          <div class="nf-pick-card">
-
-            <div class="nf-pick-title">
-              HANDICAP
-            </div>
-
-            <div class="nf-pick-value">
-              ${escapeHtml(
-                handicap
-              )}
-            </div>
-
-            <div class="nf-pick-small">
-              Arah berdasarkan prediksi skor
-            </div>
-
-          </div>
-
-
-          <!-- =====================================
-               OVER / UNDER
-          ====================================== -->
-
-          <div class="nf-pick-card">
-
-            <div class="nf-pick-title">
-              OVER / UNDER
-            </div>
-
-            <div class="nf-pick-value">
-              ${escapeHtml(
-                underOver
-              )}
-            </div>
-
-            <div class="nf-pick-small">
-              Total gol
-            </div>
-
-          </div>
-
-
-          <!-- =====================================
-               1X2
-          ====================================== -->
-
-          <div class="nf-pick-card">
-
-            <div class="nf-pick-title">
-              1X2
-            </div>
-
-            <div class="nf-pick-value">
-              ${escapeHtml(
-                winnerName
-              )}
-            </div>
-
-            <div class="nf-pick-small">
-              Match winner
-            </div>
-
-          </div>
-
-
-          <!-- =====================================
-               SKOR AKURAT
-          ====================================== -->
-
-          <div class="nf-pick-card">
-
-            <div class="nf-pick-title">
-              SKOR AKURAT
-            </div>
-
-            <div class="nf-pick-value">
-              ${escapeHtml(
-                score
-              )}
-            </div>
-
-            <div class="nf-pick-small">
-              Prediksi skor
-            </div>
-
-          </div>
-
-
-        </div>
-
-
-        <!-- =======================================
-             PERCENTAGE
-        ======================================== -->
-
-        <div class="nf-percent-section">
-
-          <div class="nf-percent-title">
-            PROBABILITAS HASIL
-          </div>
-
-
-          <div class="nf-percent-row">
-
-
-            <div class="nf-percent-item">
-
-              <span>
-                HOME
-              </span>
-
-              <strong>
-                ${escapeHtml(
-                  homePercent
-                )}
-              </strong>
-
-            </div>
-
-
-            <div class="nf-percent-item">
-
-              <span>
-                DRAW
-              </span>
-
-              <strong>
-                ${escapeHtml(
-                  drawPercent
-                )}
-              </strong>
-
-            </div>
-
-
-            <div class="nf-percent-item">
-
-              <span>
-                AWAY
-              </span>
-
-              <strong>
-                ${escapeHtml(
-                  awayPercent
-                )}
-              </strong>
-
-            </div>
-
-
-          </div>
-
-        </div>
-
-
-        <!-- =======================================
-             ADVICE
-        ======================================== -->
-
-        <div class="nf-advice">
-
-          <div class="nf-advice-title">
-            💡 ADVICE
-          </div>
-
-          <div class="nf-advice-value">
-            ${escapeHtml(
-              advice
-            )}
-          </div>
-
-        </div>
-
-
-        <!-- =======================================
-             PREDICTED TEAM
-        ======================================== -->
-
-        <div class="nf-winner-line">
-
-          <span>
-            PREDIKSI PEMENANG
-          </span>
-
-          <strong>
-            ${escapeHtml(
-              winnerName
-            )}
-          </strong>
-
-        </div>
-
-
-      </div>
-
-    `;
-
-
-    detail.classList.add(
-      "nf-prediction-open"
-    );
-
-
-    button.disabled =
-      false;
-
-
-    button.textContent =
-      "🔽 TUTUP PREDIKSI";
-
+    detail.innerHTML =
+      '<div class="nyuk-prediction-box">' +
+
+        '<div class="nyuk-prediction-title">' +
+          '🔮 PREDIKSI PERTANDINGAN' +
+        '</div>' +
+
+        '<div class="nyuk-prediction-grid">' +
+
+          '<div class="nyuk-prediction-item score">' +
+            '<small>PREDIKSI SKOR</small>' +
+            '<strong>' +
+              escapeHtml(score) +
+            '</strong>' +
+          '</div>' +
+
+          '<div class="nyuk-prediction-item">' +
+            '<small>HANDICAP</small>' +
+            '<strong>' +
+              escapeHtml(handicap) +
+            '</strong>' +
+          '</div>' +
+
+          '<div class="nyuk-prediction-item">' +
+            '<small>OVER / UNDER</small>' +
+            '<strong>' +
+              escapeHtml(underOver) +
+            '</strong>' +
+          '</div>' +
+
+          '<div class="nyuk-prediction-item">' +
+            '<small>1X2</small>' +
+            '<strong>' +
+              escapeHtml(winnerName) +
+            '</strong>' +
+          '</div>' +
+
+        '</div>' +
+
+        '<div class="nyuk-prediction-extra">' +
+
+          '<div>' +
+            '<span>SKOR AKURAT</span>' +
+            '<b>' +
+              escapeHtml(score) +
+            '</b>' +
+          '</div>' +
+
+          '<div>' +
+            '<span>HOME</span>' +
+            '<b>' +
+              escapeHtml(
+                formatPercent(
+                  percent.home
+                )
+              ) +
+            '</b>' +
+          '</div>' +
+
+          '<div>' +
+            '<span>DRAW</span>' +
+            '<b>' +
+              escapeHtml(
+                formatPercent(
+                  percent.draw
+                )
+              ) +
+            '</b>' +
+          '</div>' +
+
+          '<div>' +
+            '<span>AWAY</span>' +
+            '<b>' +
+              escapeHtml(
+                formatPercent(
+                  percent.away
+                )
+              ) +
+            '</b>' +
+          '</div>' +
+
+        '</div>' +
+
+        '<div class="nyuk-prediction-advice">' +
+          '<small>ADVICE</small>' +
+          '<div>' +
+            escapeHtml(advice) +
+          '</div>' +
+        '</div>' +
+
+      '</div>';
   }
 
+  /* =========================================================
+     NORMALIZE PREDICTED GOALS
+  ========================================================= */
 
-  /* ==================================================
-     CONVERT PREDICTED GOAL
-  ================================================== */
-
-  function convertPredictedGoal(
+  function normalizePredictionGoal(
     value
   ) {
-
     if (
-      value === undefined ||
       value === null ||
+      value === undefined ||
       value === ""
     ) {
-
       return "—";
-
     }
 
-
-    /*
-     * Bersihkan karakter aneh.
-     */
-
-    var text =
+    var raw =
       String(value)
         .trim()
-        .replace(
-          ",",
-          "."
-        );
-
-
-    /*
-     * Ambil angka pertama.
-     */
-
-    var match =
-      text.match(
-        /-?\d+(?:\.\d+)?/
-      );
-
-
-    if (!match) {
-
-      return "—";
-
-    }
-
+        .replace(",", ".");
 
     var number =
-      parseFloat(
-        match[0]
-      );
+      parseFloat(raw);
 
-
-    if (
-      isNaN(number)
-    ) {
-
+    if (isNaN(number)) {
       return "—";
-
     }
 
-
     /*
-     * Gol tidak boleh negatif.
-     */
-
-    number =
-      Math.max(
-        0,
-        number
-      );
-
-
-    /*
-     * Batasi angka yang terlalu
-     * ekstrem agar tampilan tetap
-     * masuk akal.
-     */
-
-    number =
-      Math.min(
-        9,
-        number
-      );
-
-
-    /*
-     * Bulatkan predicted goals.
+     * API-Football prediction goal values
+     * dapat memakai format negatif seperti
+     * -2.5 / -1.5 sebagai batas jumlah gol.
      *
-     * Contoh:
-     *
-     * 1.5 -> 2
-     * 0.5 -> 1
-     * 1.2 -> 1
-     * 2.7 -> 3
+     * Untuk UI skor:
+     * -2.5 -> 2
+     * -1.5 -> 1
+     * -0.5 -> 0
      */
+
+    if (number < 0) {
+      return String(
+        Math.floor(
+          Math.abs(number)
+        )
+      );
+    }
 
     return String(
-      Math.round(
-        number
-      )
+      Math.round(number)
     );
-
   }
 
-
-  /* ==================================================
+  /* =========================================================
      NORMALIZE OVER / UNDER
-  ================================================== */
+  ========================================================= */
 
-  function normalizeOverUnder(
-    value,
-    goals
+  function normalizeUnderOver(
+    value
   ) {
-
     if (
-      value === undefined ||
       value === null ||
+      value === undefined ||
       value === ""
     ) {
-
       return "—";
-
     }
-
 
     var raw =
       String(value)
         .trim();
 
-
     if (!raw) {
-
       return "—";
-
     }
 
-
-    var upper =
-      raw
-        .toUpperCase()
-        .replace(
-          ",",
-          "."
-        );
-
+    var lower =
+      raw.toLowerCase();
 
     /*
-     * ==============================================
-     * FORMAT NORMAL
+     * Kalau API sudah mengirim:
      *
-     * OVER 2.5
-     * UNDER 2.5
-     * ==============================================
+     * Over 2.5
+     * Under 2.5
+     *
+     * kita langsung rapikan.
      */
 
-    var normalMatch =
-      upper.match(
-        /\b(OVER|UNDER)\b\s*[-+]?\s*(\d+(?:\.\d+)?)/i
+    var numberMatch =
+      raw.match(
+        /(\d+(?:\.\d+)?)/
       );
 
+    var number =
+      numberMatch
+        ? numberMatch[1]
+        : "";
 
-    if (normalMatch) {
-
-      var direction =
-        normalMatch[1]
-          .toUpperCase();
-
-
-      var line =
-        parseFloat(
-          normalMatch[2]
-        );
-
-
-      if (
-        !isNaN(line)
-      ) {
-
-        return (
-          direction +
-          " " +
-          formatLine(
-            line
-          )
-        );
-
-      }
-
+    if (
+      lower.indexOf("under") !== -1
+    ) {
+      return number
+        ? "UNDER " + number
+        : "UNDER";
     }
 
+    if (
+      lower.indexOf("over") !== -1
+    ) {
+      return number
+        ? "OVER " + number
+        : "OVER";
+    }
 
     /*
-     * ==============================================
-     * FORMAT SEPERTI:
+     * Format API yang menggunakan:
      *
-     * -2.5 --2.5
-     * 2.5 - 2.5
-     * ==============================================
-     *
-     * Ambil line yang tersedia.
+     * -3.5 = UNDER 3.5
+     *  3.5 = OVER 3.5
      */
 
-    var numbers =
-      upper.match(
-        /\d+(?:\.\d+)?/g
+    var numeric =
+      parseFloat(
+        raw.replace(",", ".")
       );
 
+    if (!isNaN(numeric)) {
+      var absoluteValue =
+        Math.abs(numeric);
 
-    if (
-      numbers &&
-      numbers.length
-    ) {
-
-      var possibleLines =
-        numbers
-          .map(
-            function (item) {
-
-              return parseFloat(
-                item
-              );
-
-            }
-          )
-          .filter(
-            function (item) {
-
-              return (
-                !isNaN(item) &&
-                item >= 0.5 &&
-                item <= 6.5
-              );
-
-            }
-          );
-
-
-      if (
-        possibleLines.length
-      ) {
-
-        /*
-         * Biasanya line yang sama
-         * muncul dua kali.
-         *
-         * Ambil nilai pertama.
-         */
-
-        var line =
-          possibleLines[0];
-
-
-        var projectedTotal =
-          getProjectedGoalTotal(
-            goals
-          );
-
-
-        if (
-          projectedTotal !== null
-        ) {
-
-          if (
-            projectedTotal >
-            line
-          ) {
-
-            return (
-              "OVER " +
-              formatLine(
-                line
-              )
-            );
-
-          }
-
-
-          if (
-            projectedTotal <
-            line
-          ) {
-
-            return (
-              "UNDER " +
-              formatLine(
-                line
-              )
-            );
-
-          }
-
-          /*
-           * Kalau tepat sama dengan line,
-           * jangan memaksakan arah.
-           */
-
-          return (
-            "LINE " +
-            formatLine(
-              line
-            )
-          );
-
-        }
-
-
-        return (
-          "LINE " +
-          formatLine(
-            line
-          )
-        );
-
-      }
-
-    }
-
-
-    /*
-     * ==============================================
-     * KALAU HANYA ADA "OVER"
-     * ==============================================
-     */
-
-    if (
-      upper.indexOf(
-        "OVER"
-      ) !== -1
-    ) {
-
-      var overNumber =
-        upper.match(
-          /\d+(?:\.\d+)?/
-        );
-
-
-      if (overNumber) {
-
-        return (
-          "OVER " +
-          formatLine(
-            parseFloat(
-              overNumber[0]
-            )
-          )
-        );
-
-      }
-
-    }
-
-
-    /*
-     * ==============================================
-     * KALAU HANYA ADA "UNDER"
-     * ==============================================
-     */
-
-    if (
-      upper.indexOf(
-        "UNDER"
-      ) !== -1
-    ) {
-
-      var underNumber =
-        upper.match(
-          /\d+(?:\.\d+)?/
-        );
-
-
-      if (underNumber) {
-
+      if (numeric < 0) {
         return (
           "UNDER " +
-          formatLine(
-            parseFloat(
-              underNumber[0]
-            )
-          );
-
+          absoluteValue
+        );
       }
 
-    }
-
-
-    return "—";
-
-  }
-
-
-  /* ==================================================
-     PROJECTED TOTAL GOALS
-  ================================================== */
-
-  function getProjectedGoalTotal(
-    goals
-  ) {
-
-    if (
-      !goals
-    ) {
-
-      return null;
-
-    }
-
-
-    var home =
-      getNumericGoal(
-        goals.home
+      return (
+        "OVER " +
+        absoluteValue
       );
-
-
-    var away =
-      getNumericGoal(
-        goals.away
-      );
-
-
-    if (
-      home === null ||
-      away === null
-    ) {
-
-      return null;
-
     }
-
-
-    return (
-      home +
-      away
-    );
-
-  }
-
-
-  /* ==================================================
-     NUMERIC GOAL
-  ================================================== */
-
-  function getNumericGoal(
-    value
-  ) {
-
-    if (
-      value === undefined ||
-      value === null ||
-      value === ""
-    ) {
-
-      return null;
-
-    }
-
-
-    var match =
-      String(value)
-        .replace(
-          ",",
-          "."
-        )
-        .match(
-          /-?\d+(?:\.\d+)?/
-        );
-
-
-    if (!match) {
-
-      return null;
-
-    }
-
-
-    var number =
-      parseFloat(
-        match[0]
-      );
-
-
-    if (
-      isNaN(number)
-    ) {
-
-      return null;
-
-    }
-
-
-    return Math.max(
-      0,
-      number
-    );
-
-  }
-
-
-  /* ==================================================
-     FORMAT LINE
-  ================================================== */
-
-  function formatLine(
-    value
-  ) {
-
-    if (
-      value === undefined ||
-      value === null ||
-      isNaN(value)
-    ) {
-
-      return "—";
-
-    }
-
-
-    var number =
-      parseFloat(
-        value
-      );
-
 
     /*
-     * Line umum sepak bola:
-     *
-     * 0.5
-     * 1.5
-     * 2.5
-     * 3.5
-     * dst.
+     * Fallback kalau format aneh
+     * seperti "--2.5"
      */
 
-    if (
-      Number.isInteger(
-        number
-      )
-    ) {
-
-      return (
-        number.toFixed(
-          1
-        )
+    var fallback =
+      raw.match(
+        /(\d+(?:\.\d+)?)/
       );
 
+    if (fallback) {
+      if (
+        raw.indexOf("-") !== -1
+      ) {
+        return (
+          "UNDER " +
+          fallback[1]
+        );
+      }
+
+      return (
+        "OVER " +
+        fallback[1]
+      );
     }
 
-
-    return String(
-      number
-    );
-
+    return raw;
   }
 
-
-  /* ==================================================
-     HANDICAP / ARAH HASIL
-  ================================================== */
+  /* =========================================================
+     HANDICAP
+  ========================================================= */
 
   function buildHandicapPrediction(
     prediction,
@@ -2233,305 +1084,137 @@
     homeGoal,
     awayGoal
   ) {
-
-    /*
-     * API-Football prediction endpoint
-     * tidak memberikan sportsbook handicap
-     * secara langsung.
-     *
-     * Jadi kita tidak mengarang
-     * angka handicap.
-     */
-
-
     if (
       homeGoal === "—" ||
       awayGoal === "—"
     ) {
-
       return "—";
-
     }
 
+    var home =
+      Number(homeGoal);
 
-    var h =
-      parseInt(
-        homeGoal,
-        10
-      );
+    var away =
+      Number(awayGoal);
 
-
-    var a =
-      parseInt(
-        awayGoal,
-        10
-      );
-
-
-    if (
-      isNaN(h) ||
-      isNaN(a)
-    ) {
-
-      return "—";
-
-    }
-
-
-    if (
-      h > a
-    ) {
-
+    if (home > away) {
       return "HOME";
-
     }
 
-
-    if (
-      a > h
-    ) {
-
+    if (away > home) {
       return "AWAY";
-
     }
-
 
     return "LEVEL";
-
   }
 
-
-  /* ==================================================
-     CLEAN PREDICTION VALUE
-  ================================================== */
-
-  function cleanPredictionValue(
-    value
-  ) {
-
-    if (
-      value === undefined ||
-      value === null ||
-      value === ""
-    ) {
-
-      return "—";
-
-    }
-
-
-    return String(
-      value
-    );
-
-  }
-
-
-  /* ==================================================
+  /* =========================================================
      FORMAT PERCENT
-  ================================================== */
+  ========================================================= */
 
   function formatPercent(
     value
   ) {
-
     if (
-      value === undefined ||
       value === null ||
+      value === undefined ||
       value === ""
     ) {
-
       return "—";
-
     }
 
-
-    var text =
-      String(
-        value
-      ).trim();
-
-
-    /*
-     * API biasanya sudah
-     * mengirim "45%" atau "45".
-     */
+    var raw =
+      String(value).trim();
 
     if (
-      text.indexOf(
-        "%"
-      ) !== -1
+      raw.indexOf("%") !== -1
     ) {
-
-      return text;
-
+      return raw;
     }
 
-
-    var number =
-      parseFloat(
-        text
-      );
-
-
-    if (
-      !isNaN(number)
-    ) {
-
-      return (
-        number +
-        "%"
-      );
-
-    }
-
-
-    return text;
-
+    return raw + "%";
   }
 
-
-  /* ==================================================
+  /* =========================================================
      LOADING
-  ================================================== */
+  ========================================================= */
 
   function renderLoading() {
-
-    APP.innerHTML = `
-
-      <div class="nf-loading-screen">
-
-        <div class="nf-loader"></div>
-
-        <div class="nf-loading-title">
-          FOOTBALL PREDIKSI PARTAITOGEL
-        </div>
-
-        <div class="nf-loading-text">
-          Mengambil pertandingan...
-        </div>
-
-      </div>
-
-    `;
-
+    APP.innerHTML =
+      '<div class="nyuk-loading">' +
+        '<div class="nyuk-loading-spinner"></div>' +
+        '<div>MEMUAT PERTANDINGAN...</div>' +
+      '</div>';
   }
 
-
-  /* ==================================================
+  /* =========================================================
      ERROR
-  ================================================== */
+  ========================================================= */
 
   function renderError(
     message
   ) {
-
-    APP.innerHTML = `
-
-      <div class="nf-message nf-glass">
-
-        <div class="nf-message-title">
-          ⚠️ Gagal Memuat Data
-        </div>
-
-        <div class="nf-message-text">
-          ${escapeHtml(
-            message ||
-            "Terjadi kesalahan."
-          )}
-        </div>
-
-      </div>
-
-    `;
-
+    APP.innerHTML =
+      '<div class="nyuk-error">' +
+        '<strong>⚠️ TERJADI KESALAHAN</strong>' +
+        '<div>' +
+          message +
+        '</div>' +
+      '</div>';
   }
 
-
-  /* ==================================================
-     DATE FORMAT
-  ================================================== */
+  /* =========================================================
+     DATE
+  ========================================================= */
 
   function formatDate(
-    dateString
+    date
   ) {
+    var year =
+      date.getFullYear();
 
-    var date =
-      new Date(
-        dateString +
-        "T00:00:00"
-      );
+    var month =
+      String(
+        date.getMonth() + 1
+      ).padStart(2, "0");
 
+    var day =
+      String(
+        date.getDate()
+      ).padStart(2, "0");
 
-    return date.toLocaleDateString(
-      "id-ID",
-      {
-        weekday:
-          "long",
-
-        day:
-          "2-digit",
-
-        month:
-          "long",
-
-        year:
-          "numeric"
-      }
+    return (
+      year +
+      "-" +
+      month +
+      "-" +
+      day
     );
-
   }
 
-
-  /* ==================================================
-     ESCAPE
-  ================================================== */
+  /* =========================================================
+     ESCAPE HTML
+  ========================================================= */
 
   function escapeHtml(
     value
   ) {
-
-    return String(
-      value || ""
-    )
-
-      .replace(
-        /&/g,
-        "&amp;"
-      )
-
-      .replace(
-        /</g,
-        "&lt;"
-      )
-
-      .replace(
-        />/g,
-        "&gt;"
-      )
-
-      .replace(
-        /"/g,
-        "&quot;"
-      )
-
-      .replace(
-        /'/g,
-        "&#039;"
-      );
-
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
+  /* =========================================================
+     ESCAPE ATTRIBUTE
+  ========================================================= */
 
   function escapeAttr(
     value
   ) {
-
-    return escapeHtml(
-      value
-    );
-
+    return escapeHtml(value);
   }
-
 
 })();
