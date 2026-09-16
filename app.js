@@ -436,7 +436,7 @@
         <div class="nf-brand">
 
           <h1 class="nf-title">
-            FOOTBALL PREDICTION CENTER
+            FOOTBALL PREDIKSI PARTAITOGEL
           </h1>
 
           <div class="nf-subtitle">
@@ -1782,7 +1782,7 @@
         <div class="nf-loader"></div>
 
         <div class="nf-loading-title">
-          FOOTBALL PREDICTION CENTER
+          FOOTBALL PREDIKSI PARTAITOGEL
         </div>
 
         <div class="nf-loading-text">
