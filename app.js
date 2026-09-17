@@ -1228,8 +1228,10 @@
   );
 
 
-  /* ==================================================
+    /* ==================================================
      LOAD PREDICTION
+     LOCAL RANDOM PREDICTION
+     SCORE + OVER/UNDER + HANDICAP
   ================================================== */
 
   function loadPrediction(
@@ -1243,37 +1245,33 @@
         fixture
       );
 
-
     if (!card) {
       return;
     }
 
-
-    button.disabled =
-      true;
-
-
-    button.textContent =
-      "MENGANALISIS...";
-
+    button.disabled = true;
+    button.textContent = "MENGANALISIS...";
 
     var main =
       card.querySelector(
         ".nf-prediction-main"
       );
 
-
     if (main) {
 
       main.innerHTML = `
 
-        <div class="nf-prediction-loading">
+        <div style="width:100%;">
 
-          <span class="nf-mini-loader"></span>
+          <div class="nf-prediction-loading">
 
-          <span>
-            Menganalisis pertandingan...
-          </span>
+            <span class="nf-mini-loader"></span>
+
+            <span>
+              Menganalisis pertandingan...
+            </span>
+
+          </div>
 
         </div>
 
@@ -1281,118 +1279,295 @@
 
     }
 
+    /*
+     * Sedikit delay agar efek "menganalisis"
+     * tetap terlihat seperti proses prediksi.
+     *
+     * TIDAK ADA REQUEST KE ENDPOINT PREDICTIONS.
+     */
 
-    jsonp(
+    setTimeout(
+      function () {
 
-      {
-
-        endpoint:
-          "predictions",
-
-        fixture:
-          fixture
-
-      },
-
-      function (
-        error,
-        result
-      ) {
-
-        button.disabled =
-          false;
-
-
-        if (error) {
-
-          button.textContent =
-            "🔄 COBA LAGI";
-
-
-          showPredictionError(
-            card,
-            error.message
+        var prediction =
+          generateRandomPrediction(
+            fixture
           );
-
-
-          return;
-
-        }
-
-
-        if (
-          !result ||
-          !result.success
-        ) {
-
-          button.textContent =
-            "🔄 COBA LAGI";
-
-
-          showPredictionError(
-
-            card,
-
-            result &&
-            result.error
-
-              ? result.error
-
-              : "Prediction API error."
-
-          );
-
-
-          return;
-
-        }
-
-
-        var data =
-          result.data &&
-          result.data.response
-            ? result.data.response[0]
-            : null;
-
-
-        if (!data) {
-
-          button.textContent =
-            "NO PREDICTION";
-
-
-          showPredictionError(
-
-            card,
-
-            "Data prediksi belum tersedia untuk pertandingan ini."
-
-          );
-
-
-          return;
-
-        }
-
 
         renderPrediction(
           card,
-          data,
+          prediction,
           fixture
         );
 
-
         button.remove();
 
-      }
-
+      },
+      450
     );
 
   }
 
 
   /* ==================================================
+     GENERATE RANDOM PREDICTION
+     SCORE MENJADI DASAR O/U + HANDICAP
+  ================================================== */
+
+  function generateRandomPrediction(
+    fixtureId
+  ) {
+
+    /*
+     * Seed berdasarkan fixture ID.
+     * Jadi setiap pertandingan mendapatkan
+     * prediksi berbeda tetapi tetap stabil.
+     */
+
+    var seed =
+      parseInt(
+        String(fixtureId)
+          .replace(/\D/g, "")
+          .slice(-8),
+        10
+      );
+
+    if (isNaN(seed)) {
+      seed =
+        Date.now();
+    }
+
+    function random() {
+
+      seed =
+        (
+          seed * 9301 +
+          49297
+        ) %
+        233280;
+
+      return seed / 233280;
+
+    }
+
+
+    /*
+     * Pilihan skor dibuat masuk akal.
+     * Tidak semua pertandingan 0 : 0.
+     */
+
+    var scoreOptions = [
+
+      [1, 0],
+      [0, 1],
+
+      [1, 1],
+
+      [2, 0],
+      [0, 2],
+
+      [2, 1],
+      [1, 2],
+
+      [2, 2],
+
+      [3, 0],
+      [0, 3],
+
+      [3, 1],
+      [1, 3],
+
+      [3, 2],
+      [2, 3],
+
+      [1, 4],
+      [4, 1],
+
+      [0, 0]
+
+    ];
+
+
+    var selected =
+      scoreOptions[
+        Math.floor(
+          random() *
+          scoreOptions.length
+        )
+      ];
+
+
+    var homeGoals =
+      selected[0];
+
+    var awayGoals =
+      selected[1];
+
+
+    /*
+     * ================================================
+     * OVER / UNDER
+     * ================================================
+     *
+     * O/U HARUS mengikuti jumlah gol prediksi.
+     */
+
+    var totalGoals =
+      homeGoals +
+      awayGoals;
+
+    var overUnder;
+
+
+    if (totalGoals <= 1) {
+
+      overUnder =
+        random() > 0.35
+          ? "UNDER 2.5"
+          : "UNDER 1.5";
+
+    }
+    else if (totalGoals === 2) {
+
+      overUnder =
+        random() > 0.45
+          ? "OVER 1.5"
+          : "UNDER 2.5";
+
+    }
+    else if (totalGoals === 3) {
+
+      overUnder =
+        random() > 0.25
+          ? "OVER 2.5"
+          : "UNDER 3.5";
+
+    }
+    else if (totalGoals === 4) {
+
+      overUnder =
+        random() > 0.35
+          ? "OVER 2.5"
+          : "OVER 3.5";
+
+    }
+    else {
+
+      overUnder =
+        "OVER 2.5";
+
+    }
+
+
+    /*
+     * ================================================
+     * HANDICAP
+     * ================================================
+     *
+     * Handicap mengikuti selisih skor.
+     *
+     * Contoh:
+     * 2 : 1  -> HOME -0.5
+     * 3 : 1  -> HOME -1.0
+     * 1 : 2  -> AWAY -0.5
+     * 2 : 2  -> HOME 0
+     */
+
+    var diff =
+      homeGoals -
+      awayGoals;
+
+    var handicap;
+
+
+    if (diff >= 3) {
+
+      handicap =
+        random() > 0.5
+          ? "HOME -1.5"
+          : "HOME -1.75";
+
+    }
+    else if (diff === 2) {
+
+      handicap =
+        random() > 0.35
+          ? "HOME -1.0"
+          : "HOME -1.25";
+
+    }
+    else if (diff === 1) {
+
+      handicap =
+        random() > 0.30
+          ? "HOME -0.5"
+          : "HOME -0.75";
+
+    }
+    else if (diff === 0) {
+
+      handicap =
+        random() > 0.50
+          ? "HOME 0"
+          : "AWAY 0";
+
+    }
+    else if (diff === -1) {
+
+      handicap =
+        random() > 0.30
+          ? "AWAY -0.5"
+          : "AWAY -0.75";
+
+    }
+    else if (diff === -2) {
+
+      handicap =
+        random() > 0.35
+          ? "AWAY -1.0"
+          : "AWAY -1.25";
+
+    }
+    else {
+
+      handicap =
+        random() > 0.5
+          ? "AWAY -1.5"
+          : "AWAY -1.75";
+
+    }
+
+
+    return {
+
+      homeGoals:
+        homeGoals,
+
+      awayGoals:
+        awayGoals,
+
+      predictedScore:
+        homeGoals +
+        " : " +
+        awayGoals,
+
+      overUnder:
+        overUnder,
+
+      handicap:
+        handicap
+
+    };
+
+  }
+
+
+  /* ==================================================
      RENDER PREDICTION
+     HANYA:
+     1. SKOR
+     2. OVER / UNDER
+     3. HANDICAP
   ================================================== */
 
   function renderPrediction(
@@ -1401,165 +1576,29 @@
     fixture
   ) {
 
-    var prediction =
-      data.predictions ||
-      {};
-
-
-    var winner =
-      prediction.winner ||
-      {};
-
-
-    var percent =
-      prediction.percent ||
-      {};
-
-
-    var goals =
-      prediction.goals ||
-      {};
-
-
-    var advice =
-      prediction.advice ||
-      "Analisis tersedia";
-
-
-    /*
-      -----------------------------------------------
-      WINNER
-      -----------------------------------------------
-    */
-
-    var winnerName =
-      winner.name ||
-      "";
-
-
-    var winnerComment =
-      winner.comment ||
-      "";
-
-
-    /*
-      -----------------------------------------------
-      SCORE
-      -----------------------------------------------
-    */
-
-    var homeGoals =
-      cleanPredictionValue(
-        goals.home
-      );
-
-
-    var awayGoals =
-      cleanPredictionValue(
-        goals.away
-      );
-
-
-    var predictedScore =
-      "--";
-
-
-    if (
-      homeGoals !== null &&
-      awayGoals !== null
-    ) {
-
-      predictedScore =
-        homeGoals +
-        " - " +
-        awayGoals;
-
-    }
-
-
-    /*
-      -----------------------------------------------
-      OVER / UNDER
-      -----------------------------------------------
-    */
-
-    var underOver =
-      prediction.under_over ||
-      "";
-
-
-    var overUnder =
-      formatOverUnder(
-        underOver
-      );
-
-
-    /*
-      -----------------------------------------------
-      1X2
-      -----------------------------------------------
-    */
-
-    var oneXTwo =
-      get1X2Prediction(
-        prediction,
-        winner,
-        homeGoals,
-        awayGoals
-      );
-
-
-    /*
-      -----------------------------------------------
-      HANDICAP
-      -----------------------------------------------
-    */
-
-    var handicap =
-      getHandicapPrediction(
-        prediction,
-        winner,
-        homeGoals,
-        awayGoals
-      );
-
-
-    /*
-      -----------------------------------------------
-      PERCENT
-      -----------------------------------------------
-    */
-
-    var homePercent =
-      percent.home ||
-      "--";
-
-
-    var drawPercent =
-      percent.draw ||
-      "--";
-
-
-    var awayPercent =
-      percent.away ||
-      "--";
-
-
-    /*
-      -----------------------------------------------
-      MAIN
-      -----------------------------------------------
-    */
-
     var main =
       card.querySelector(
         ".nf-prediction-main"
       );
 
-
     if (!main) {
       return;
     }
+
+
+    var predictedScore =
+      data.predictedScore ||
+      "-- : --";
+
+
+    var overUnder =
+      data.overUnder ||
+      "N/A";
+
+
+    var handicap =
+      data.handicap ||
+      "N/A";
 
 
     main.innerHTML = `
@@ -1569,9 +1608,7 @@
         <div class="nf-prediction-box">
 
 
-          <div
-            class="nf-prediction-box-header"
-          >
+          <div class="nf-prediction-box-header">
 
             <div>
               🔮 MATCH PREDICTION
@@ -1585,6 +1622,10 @@
 
           </div>
 
+
+          <!-- =====================================
+               PREDIKSI SKOR
+          ====================================== -->
 
           <div class="nf-score-label">
 
@@ -1602,61 +1643,25 @@
           </div>
 
 
+          <!-- =====================================
+               OVER / UNDER + HANDICAP
+          ====================================== -->
+
           <div class="nf-prediction-grid">
 
 
             <div class="nf-pick-card">
 
               <div class="nf-pick-title">
-                🏆 PEMENANG
-              </div>
 
-              <div class="nf-pick-value">
-
-                ${
-                  winnerName
-                    ? escapeHtml(
-                        winnerName
-                      )
-                    : "NO CLEAR WINNER"
-                }
-
-              </div>
-
-            </div>
-
-
-            <div class="nf-pick-card">
-
-              <div class="nf-pick-title">
                 ⚽ OVER / UNDER
-              </div>
 
-              <div class="nf-pick-value">
-
-                ${
-                  overUnder
-                    ? escapeHtml(
-                        overUnder
-                      )
-                    : "N/A"
-                }
-
-              </div>
-
-            </div>
-
-
-            <div class="nf-pick-card">
-
-              <div class="nf-pick-title">
-                1X2
               </div>
 
               <div class="nf-pick-value">
 
                 ${escapeHtml(
-                  oneXTwo
+                  overUnder
                 )}
 
               </div>
@@ -1667,7 +1672,9 @@
             <div class="nf-pick-card">
 
               <div class="nf-pick-title">
+
                 HANDICAP
+
               </div>
 
               <div class="nf-pick-value">
@@ -1683,443 +1690,6 @@
 
           </div>
 
-
-          <div class="nf-percent-section">
-
-
-            <div class="nf-percent-title">
-
-              📊 PROBABILITY HASIL
-
-            </div>
-
-
-            <div class="nf-percent-row">
-
-
-              <div class="nf-percent-item">
-
-                <span>
-                  HOME
-                </span>
-
-                <strong>
-                  ${escapeHtml(
-                    homePercent
-                  )}
-                </strong>
-
-              </div>
-
-
-              <div class="nf-percent-item">
-
-                <span>
-                  DRAW
-                </span>
-
-                <strong>
-                  ${escapeHtml(
-                    drawPercent
-                  )}
-                </strong>
-
-              </div>
-
-
-              <div class="nf-percent-item">
-
-                <span>
-                  AWAY
-                </span>
-
-                <strong>
-                  ${escapeHtml(
-                    awayPercent
-                  )}
-                </strong>
-
-              </div>
-
-
-            </div>
-
-
-          </div>
-
-
-          <div class="nf-advice">
-
-
-            <div class="nf-advice-title">
-
-              💡 ANALYSIS / ADVICE
-
-            </div>
-
-
-            <div class="nf-advice-value">
-
-              ${escapeHtml(
-                advice
-              )}
-
-            </div>
-
-
-          </div>
-
-
-          ${
-            winnerComment
-
-              ? `
-
-                <div class="nf-winner-line">
-
-                  <span>
-                    CONFIDENCE
-                  </span>
-
-                  <strong>
-
-                    ${escapeHtml(
-                      winnerComment
-                    )}
-
-                  </strong>
-
-                </div>
-
-              `
-
-              : ""
-
-          }
-
-
-        </div>
-
-      </div>
-
-    `;
-
-  }
-
-
-  /* ==================================================
-     1X2
-  ================================================== */
-
-  function get1X2Prediction(
-    prediction,
-    winner,
-    homeGoals,
-    awayGoals
-  ) {
-
-    /*
-      Jika skor prediksi tersedia,
-      gunakan skor terlebih dahulu.
-    */
-
-    if (
-      homeGoals !== null &&
-      awayGoals !== null
-    ) {
-
-      if (
-        homeGoals >
-        awayGoals
-      ) {
-
-        return "HOME";
-
-      }
-
-
-      if (
-        awayGoals >
-        homeGoals
-      ) {
-
-        return "AWAY";
-
-      }
-
-
-      return "DRAW";
-
-    }
-
-
-    /*
-      Jika tidak ada skor,
-      gunakan nama winner.
-    */
-
-    if (
-      winner &&
-      winner.name
-    ) {
-
-      var winnerName =
-        String(
-          winner.name
-        ).toLowerCase();
-
-
-      /*
-        Kita tidak bisa menentukan
-        HOME/AWAY secara absolut
-        hanya dari nama winner
-        di sini tanpa data tim pada
-        objek prediction.
-
-        Maka tampilkan nama pemenang.
-      */
-
-      return winner.name;
-
-    }
-
-
-    return "N/A";
-
-  }
-
-
-  /* ==================================================
-     HANDICAP
-  ================================================== */
-
-  function getHandicapPrediction(
-    prediction,
-    winner,
-    homeGoals,
-    awayGoals
-  ) {
-
-    /*
-      API-Football prediction endpoint
-      tidak selalu menyediakan line handicap
-      sportsbook seperti -0.5 / -1 / +0.25.
-
-      Jadi kita tidak membuat angka handicap palsu.
-
-      Jika ada skor prediksi, kita berikan
-      arah handicap sederhana berdasarkan
-      selisih skor.
-    */
-
-    if (
-      homeGoals !== null &&
-      awayGoals !== null
-    ) {
-
-      var diff =
-        homeGoals -
-        awayGoals;
-
-
-      if (
-        diff >= 2
-      ) {
-
-        return "HOME";
-
-      }
-
-
-      if (
-        diff === 1
-      ) {
-
-        return "HOME";
-
-      }
-
-
-      if (
-        diff === 0
-      ) {
-
-        return "LEVEL";
-
-      }
-
-
-      if (
-        diff === -1
-      ) {
-
-        return "AWAY";
-
-      }
-
-
-      if (
-        diff <= -2
-      ) {
-
-        return "AWAY";
-
-      }
-
-    }
-
-
-    if (
-      winner &&
-      winner.name
-    ) {
-
-      return winner.name;
-
-    }
-
-
-    return "N/A";
-
-  }
-
-
-  /* ==================================================
-     OVER / UNDER
-  ================================================== */
-
-  function formatOverUnder(
-    value
-  ) {
-
-    if (
-      value ===
-      undefined ||
-      value ===
-      null
-    ) {
-
-      return "";
-
-    }
-
-
-    var text =
-      String(
-        value
-      ).trim();
-
-
-    if (!text) {
-      return "";
-    }
-
-
-    /*
-      Normalisasi beberapa bentuk
-      yang mungkin dikembalikan API.
-    */
-
-    text =
-      text
-        .replace(
-          /under/gi,
-          "UNDER"
-        )
-        .replace(
-          /over/gi,
-          "OVER"
-        );
-
-
-    /*
-      Contoh:
-      "Over 2.5"
-      "Under 3.5"
-    */
-
-    return text;
-
-  }
-
-
-  /* ==================================================
-     CLEAN SCORE
-  ================================================== */
-
-  function cleanPredictionValue(
-    value
-  ) {
-
-    if (
-      value ===
-      undefined ||
-      value ===
-      null ||
-      value ===
-      ""
-    ) {
-
-      return null;
-
-    }
-
-
-    var number =
-      parseInt(
-        value,
-        10
-      );
-
-
-    if (
-      isNaN(
-        number
-      )
-    ) {
-
-      return null;
-
-    }
-
-
-    return number;
-
-  }
-
-
-  /* ==================================================
-     PREDICTION ERROR
-  ================================================== */
-
-  function showPredictionError(
-    card,
-    message
-  ) {
-
-    var main =
-      card.querySelector(
-        ".nf-prediction-main"
-      );
-
-
-    if (!main) {
-      return;
-    }
-
-
-    main.innerHTML = `
-
-      <div style="width:100%;">
-
-        <div class="nf-prediction-error">
-
-          ⚠️
-
-          ${escapeHtml(
-            message ||
-            "Gagal mengambil data prediksi."
-          )}
 
         </div>
 
